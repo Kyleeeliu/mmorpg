@@ -31,7 +31,9 @@ class Game {
             this.animations = {
                 idle: { frames: 4, row: 0 },
                 walk: { frames: 4, row: 1 },
-                run: { frames: 8, row: 2 }  // Restored running animation
+                run: { frames: 8, row: 2 },
+                jump: { frames: 4, row: 3 },
+                fall: { frames: 3, row: 4 }
             };
 
             // Animation timing
@@ -45,7 +47,9 @@ class Game {
                 a: false,
                 d: false,
                 e: false,
-                shift: false  // Restored shift key for running
+                shift: false,
+                m: false,
+                space: false  // Add space for jumping
             };
 
             // Map properties
@@ -55,12 +59,54 @@ class Game {
                 ground: { y: window.innerHeight - 100, height: 100 }
             };
 
-            // Town buildings
+            // Simplify spiritual progress to just track shrine completions
+            this.spiritualProgress = {
+                totalShrinesCompleted: 0
+            };
+
+            // Simplify shrine system
+            this.shrines = [
+                {
+                    x: 650,
+                    y: this.map.ground.y - 220,
+                    width: 220,
+                    height: 220,
+                    type: 'shrine',
+                    style: 'temple',
+                    name: 'Temple of Serenity',
+                    completed: false,
+                    wisdom: "Peace begins within."
+                },
+                {
+                    x: 1500,
+                    y: this.map.ground.y - 200,
+                    width: 200,
+                    height: 200,
+                    type: 'shrine',
+                    style: 'temple',
+                    name: 'Garden of Wisdom',
+                    completed: false,
+                    wisdom: "Knowledge flows like water."
+                },
+                {
+                    x: 1800,
+                    y: this.map.ground.y - 210,
+                    width: 210,
+                    height: 210,
+                    type: 'shrine',
+                    style: 'temple',
+                    name: 'Sanctuary of Compassion',
+                    completed: false,
+                    wisdom: "In giving, we receive."
+                }
+            ];
+
+            // Replace buildings array with combined buildings and shrines
             this.buildings = [
                 { x: 50, y: this.map.ground.y - 200, width: 200, height: 200, type: 'house', style: 'traditional' },
                 { x: 350, y: this.map.ground.y - 180, width: 180, height: 180, type: 'shop', style: 'merchant' },
-                { x: 650, y: this.map.ground.y - 220, width: 220, height: 220, type: 'dojo', style: 'temple' },
-                { x: 950, y: this.map.ground.y - 190, width: 190, height: 190, type: 'house', style: 'noble' }
+                { x: 950, y: this.map.ground.y - 190, width: 190, height: 190, type: 'house', style: 'noble' },
+                ...this.shrines
             ];
 
             // Interaction system
@@ -113,18 +159,116 @@ class Game {
                     size: Math.random() * 2 + 1,
                     twinkle: Math.random()
                 })),
-                clouds: Array.from({ length: 15 }, () => ({
-                    x: Math.random() * 2000,
-                    y: Math.random() * (window.innerHeight / 2),
-                    width: Math.random() * 150 + 100,
-                    height: Math.random() * 40 + 30,
-                    speed: Math.random() * 0.2 + 0.1,
-                    opacity: Math.random() * 0.3 + 0.1
-                }))
+                clouds: Array.from({ length: 8 }, () => { // Fewer, more distinct clouds
+                    const width = Math.random() * 60 + 100; // More consistent width
+                    const height = 60; // Fixed height for consistent look
+                    const squares = [];
+                    
+                    // Classic video game cloud pattern
+                    // Main body - 3x2 grid of squares
+                    const baseSize = 30; // Base square size
+                    
+                    // Top row - smaller squares
+                    for (let i = 0; i < 3; i++) {
+                        squares.push({
+                            xOffset: i * baseSize,
+                            yOffset: 0,
+                            size: baseSize,
+                            type: 'top'
+                        });
+                    }
+                    
+                    // Bottom row - larger squares for puffy bottom
+                    for (let i = 0; i < 4; i++) {
+                        squares.push({
+                            xOffset: (i * baseSize) - baseSize/2, // Offset for overhang
+                            yOffset: baseSize,
+                            size: baseSize,
+                            type: 'bottom'
+                        });
+                    }
+                    
+                    return {
+                        x: Math.random() * 2000,
+                        y: Math.random() * (window.innerHeight / 3), // Keep clouds in upper third
+                        width: width,
+                        height: height,
+                        speed: Math.random() * 0.15 + 0.05, // Slower, more steady movement
+                        opacity: 0.9, // Consistent opacity
+                        squares: squares
+                    };
+                })
             };
 
             // Start sky update interval
             setInterval(() => this.updateSkyTime(), 60000);
+
+            // Add meditation state
+            this.meditation = {
+                active: false,
+                duration: 0,
+                maxDuration: 60, // seconds
+                benefits: {
+                    peace: 0,
+                    wisdom: 0
+                }
+            };
+            
+            // Add dojo interaction
+            this.dojoInteraction = {
+                active: false,
+                nearDojo: false,
+                meditationPrompt: false
+            };
+
+            // UI state for spiritual journey
+            this.spiritualUI = {
+                showProgress: false,
+                showInventory: false,
+                showObjective: false
+            };
+
+            // Animation state for shrine offerings
+            this.offeringAnimation = {
+                active: false,
+                shrine: null,
+                startTime: 0,
+                duration: 3000, // 3 seconds
+                particles: [],
+                initialPlayerY: 0,
+                floatHeight: 0
+            };
+
+            // Physics properties
+            this.physics = {
+                gravity: 0.8,
+                jumpForce: -10,
+                maxFallSpeed: 15,
+                groundFriction: 0.8,
+                airFriction: 0.95
+            };
+
+            // Add yin yang meter properties
+            this.yinYangMeter = {
+                progress: 0,  // 0 to 1
+                size: 80,    // Size of the meter
+                x: 20,       // Position from left
+                y: 100      // Position from top
+            };
+
+            // Add control guide properties
+            this.controlGuide = {
+                x: window.innerWidth - 200,  // Position from right
+                y: 20,                       // Position from top
+                width: 180,                  // Width of guide
+                controls: [
+                    { key: 'A/D', action: 'Move' },
+                    { key: 'SPACE', action: 'Jump' },
+                    { key: 'SHIFT', action: 'Run' },
+                    { key: 'E', action: 'Interact' },
+                    { key: 'M', action: 'Meditate' }
+                ]
+            };
 
         } catch (error) {
             console.error('Game initialization failed:', error);
@@ -160,21 +304,57 @@ class Game {
     resizeCanvas() {
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
+        
+        // Update control guide position on resize
+        if (this.controlGuide) {
+            this.controlGuide.x = this.canvas.width - 200;
+        }
     }
     
     initGame() {
-        // Initialize player
+        // Initialize player with physics properties
         this.player = {
             x: 100,
             y: this.map.ground.y - this.canvasHeight * 2,
             width: this.canvasWidth * 2,
             height: this.canvasHeight * 2,
             speed: 3,
-            runSpeed: 7, // Added separate run speed
+            runSpeed: 7,
             state: 'idle',
             direction: 'right',
             isMoving: false,
-            isRunning: false // Added running state
+            isRunning: false,
+            // Add physics properties
+            velocityX: 0,
+            velocityY: 0,
+            isJumping: false,
+            isGrounded: true,
+            jumpCount: 0,
+            maxJumps: 1  // Single jump for now
+        };
+
+        // Initialize game panel
+        this.gamePanel = {
+            x: 20,
+            y: 200,
+            width: 180,
+            height: 250,
+            sections: [
+                {
+                    title: "Character",
+                    stats: [
+                        { label: "Spirit", value: 0, max: 100 },
+                        { label: "Wisdom", value: 0, max: 100 }
+                    ]
+                },
+                {
+                    title: "Journey",
+                    stats: [
+                        { label: "Shrines", value: 0, max: 3 },
+                        { label: "Meditation", value: 0, unit: "min" }
+                    ]
+                }
+            ]
         };
         
         // Initialize NPCs
@@ -194,8 +374,8 @@ class Game {
     initNPCs() {
         const positions = [
             { x: 400, y: this.map.ground.y - 56, type: 'villager', direction: 'left' },
-            { x: 700, y: this.map.ground.y - 56, type: 'lord', direction: 'right' },
-            { x: 1000, y: this.map.ground.y - 56, type: 'ronin', direction: 'left' }
+            { x: 150, y: this.map.ground.y - 56, type: 'lord', direction: 'right' },  // Moved lord next to first house
+            { x: 1200, y: this.map.ground.y - 56, type: 'ronin', direction: 'left' }
         ];
 
         this.npcs = positions.map(pos => ({
@@ -212,31 +392,47 @@ class Game {
     initControls() {
         window.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
-            if (this.keys.hasOwnProperty(key)) {
+            if (key === ' ') {
+                this.keys.space = true;
+                this.handleJump();
+            } else if (this.keys.hasOwnProperty(key)) {
                 this.keys[key] = true;
-                if (key !== 'e') {
+                if (key !== 'e' && key !== 'm') {
                     this.player.isMoving = true;
                 }
                 if (key === 'shift') {
                     this.player.isRunning = true;
                 }
-            }
-
-            // Handle E key press for interaction
-            if (key === 'e' && this.activeNPC && !this.dialogueActive) {
-                this.startDialogue(this.activeNPC);
-            } else if (key === 'e' && this.dialogueActive) {
-                this.advanceDialogue();
+                if (key === 'e') {
+                    // Handle NPC interaction
+                    if (this.showInteractionPrompt && this.activeNPC) {
+                        if (this.dialogueActive) {
+                            this.advanceDialogue();
+                        } else {
+                            this.startDialogue(this.activeNPC);
+                        }
+                    }
+                    // Handle shrine interaction
+                    const nearestShrine = this.findNearestShrine();
+                    if (nearestShrine && !nearestShrine.completed && !this.offeringAnimation.active) {
+                        this.startOfferingAnimation(nearestShrine);
+                    }
+                }
+                if (key === 'm') {
+                    this.toggleMeditation();
+                }
             }
         });
         
         window.addEventListener('keyup', (e) => {
             const key = e.key.toLowerCase();
-            if (this.keys.hasOwnProperty(key)) {
+            if (key === ' ') {
+                this.keys.space = false;
+            } else if (this.keys.hasOwnProperty(key)) {
                 this.keys[key] = false;
-                if (key !== 'e') {
+                if (key !== 'e' && key !== 'm') {
                     this.player.isMoving = Object.entries(this.keys)
-                        .filter(([k, _]) => k !== 'e')
+                        .filter(([k, _]) => k !== 'e' && k !== 'm')
                         .some(([_, pressed]) => pressed);
                 }
                 if (key === 'shift') {
@@ -290,26 +486,63 @@ class Game {
     updatePlayerPosition() {
         const currentSpeed = this.player.isRunning ? this.player.runSpeed : this.player.speed;
         
+        // Handle horizontal movement
         if (this.keys.a) {
-            this.player.x -= currentSpeed;
+            this.player.velocityX = -currentSpeed;
             this.player.direction = 'left';
         }
         if (this.keys.d) {
-            this.player.x += currentSpeed;
+            this.player.velocityX = currentSpeed;
             this.player.direction = 'right';
         }
-
-        // Update player state
-        if (!this.player.isMoving) {
-            this.player.state = 'idle';
-        } else {
-            this.player.state = this.player.isRunning ? 'run' : 'walk';
+        if (!this.keys.a && !this.keys.d) {
+            // Let friction handle deceleration
+            this.player.velocityX *= this.player.isGrounded ? 0.8 : 0.95;
         }
+    }
+
+    updatePlayerPhysics() {
+        // Apply gravity
+        this.player.velocityY += this.physics.gravity;
         
+        // Clamp fall speed
+        if (this.player.velocityY > this.physics.maxFallSpeed) {
+            this.player.velocityY = this.physics.maxFallSpeed;
+        }
+
+        // Update position
+        this.player.y += this.player.velocityY;
+        this.player.x += this.player.velocityX;
+
+        // Ground collision
+        if (this.player.y > this.map.ground.y - this.player.height) {
+            this.player.y = this.map.ground.y - this.player.height;
+            this.player.velocityY = 0;
+            this.player.isGrounded = true;
+            this.player.isJumping = false;
+            this.player.jumpCount = 0;
+        }
+
+        // Apply friction
+        if (this.player.isGrounded) {
+            this.player.velocityX *= this.physics.groundFriction;
+        } else {
+            this.player.velocityX *= this.physics.airFriction;
+        }
+
+        // Update animation state based on physics
+        if (!this.player.isGrounded) {
+            this.player.state = this.player.velocityY < 0 ? 'jump' : 'fall';
+        } else if (Math.abs(this.player.velocityX) > 0.1) {
+            this.player.state = this.player.isRunning ? 'run' : 'walk';
+        } else {
+            this.player.state = 'idle';
+        }
+
         // Keep player within map bounds
         this.player.x = Math.max(0, Math.min(this.map.width - this.player.width, this.player.x));
     }
-    
+
     updateSkyTime() {
         this.sky.time = new Date();
     }
@@ -387,15 +620,13 @@ class Game {
             this.sky.stars.forEach(star => {
                 const twinkle = Math.sin(Date.now() * 0.001 + star.twinkle * 10) * 0.3 + 0.7;
                 this.ctx.fillStyle = `rgba(255, 255, 255, ${starOpacity * twinkle})`;
-                this.ctx.beginPath();
-                this.ctx.arc(
-                    star.x - this.camera.x * 0.1, // Parallax effect
-                    star.y,
+                // Draw square stars instead of circles
+                this.ctx.fillRect(
+                    star.x - this.camera.x * 0.1 - star.size/2,
+                    star.y - star.size/2,
                     star.size,
-                    0,
-                    Math.PI * 2
+                    star.size
                 );
-                this.ctx.fill();
             });
         }
 
@@ -405,23 +636,38 @@ class Game {
             this.sky.clouds.forEach(cloud => {
                 this.ctx.save();
                 this.ctx.translate(-this.camera.x * 0.2, 0); // Parallax effect
-                this.ctx.fillStyle = `rgba(255, 255, 255, ${cloud.opacity * cloudOpacity})`;
                 
-                // Draw cloud shape
-                this.ctx.beginPath();
-                this.ctx.moveTo(cloud.x, cloud.y);
-                // Draw multiple circles to create cloud shape
-                for (let i = 0; i < cloud.width; i += 30) {
-                    const circleHeight = Math.sin(i / cloud.width * Math.PI) * cloud.height;
-                    this.ctx.arc(
-                        cloud.x + i,
-                        cloud.y + circleHeight / 2,
-                        cloud.height / 2,
-                        0,
-                        Math.PI * 2
-                    );
-                }
-                this.ctx.fill();
+                // Draw each square in the cloud
+                cloud.squares.forEach(square => {
+                    // Different shades for top and bottom squares
+                    if (square.type === 'top') {
+                        this.ctx.fillStyle = `rgba(255, 255, 255, ${cloud.opacity * cloudOpacity})`;
+                    } else {
+                        this.ctx.fillStyle = `rgba(240, 240, 240, ${cloud.opacity * cloudOpacity * 0.9})`; // Slightly darker bottom
+                    }
+                    
+                    // Draw rounded squares for softer look
+                    this.ctx.beginPath();
+                    const radius = 8; // Corner radius
+                    const x = cloud.x + square.xOffset;
+                    const y = cloud.y + square.yOffset;
+                    const size = square.size;
+                    
+                    // Draw rounded rectangle
+                    this.ctx.moveTo(x + radius, y);
+                    this.ctx.lineTo(x + size - radius, y);
+                    this.ctx.quadraticCurveTo(x + size, y, x + size, y + radius);
+                    this.ctx.lineTo(x + size, y + size - radius);
+                    this.ctx.quadraticCurveTo(x + size, y + size, x + size - radius, y + size);
+                    this.ctx.lineTo(x + radius, y + size);
+                    this.ctx.quadraticCurveTo(x, y + size, x, y + size - radius);
+                    this.ctx.lineTo(x, y + radius);
+                    this.ctx.quadraticCurveTo(x, y, x + radius, y);
+                    this.ctx.closePath();
+                    
+                    this.ctx.fill();
+                });
+                
                 this.ctx.restore();
             });
         }
@@ -480,15 +726,105 @@ class Game {
     }
 
     drawTempleDetails(building) {
-        // Ornate entrance
-        this.ctx.fillStyle = '#8B4513';
-        this.ctx.fillRect(building.x + building.width/4, building.y + building.height - 100,
-                         building.width/2, 100);
-        // Temple ornaments
-        this.ctx.fillStyle = '#FFD700';
+        // Main entrance (Torii gate style)
+        this.ctx.fillStyle = '#A52A2A'; // Deep red
+        
+        // Left pillar
+        this.ctx.fillRect(
+            building.x + building.width/4 - 10,
+            building.y + building.height - 120,
+            20, 120
+        );
+        
+        // Right pillar
+        this.ctx.fillRect(
+            building.x + (building.width * 3/4) - 10,
+            building.y + building.height - 120,
+            20, 120
+        );
+        
+        // Top beam
+        this.ctx.fillRect(
+            building.x + building.width/4 - 20,
+            building.y + building.height - 120,
+            building.width/2 + 40, 20
+        );
+        
+        // Curved roof detail
         this.ctx.beginPath();
-        this.ctx.arc(building.x + building.width/2, building.y - 20, 15, 0, Math.PI * 2);
+        this.ctx.moveTo(building.x - 30, building.y);
+        this.ctx.quadraticCurveTo(
+            building.x + building.width/2,
+            building.y - 60,
+            building.x + building.width + 30,
+            building.y
+        );
+        this.ctx.fillStyle = '#8B4513';
         this.ctx.fill();
+        
+        // Ornate details
+        this.ctx.fillStyle = '#FFD700';
+        
+        // Top ornament (square)
+        this.ctx.fillRect(
+            building.x + building.width/2 - 15,
+            building.y - 55,
+            30, 30
+        );
+        
+        // Side ornaments (squares)
+        this.ctx.fillRect(building.x - 25, building.y + 15, 20, 20);
+        this.ctx.fillRect(building.x + building.width + 5, building.y + 15, 20, 20);
+        
+        // Meditation area
+        this.drawMeditationArea(building);
+    }
+    
+    drawMeditationArea(building) {
+        // Stone path
+        this.ctx.fillStyle = '#808080';
+        for(let i = 0; i < 5; i++) {
+            this.ctx.fillRect(
+                building.x + building.width/2 - 100 + (i * 45),
+                building.y + building.height,
+                35, 20
+            );
+        }
+        
+        // Zen garden
+        this.ctx.fillStyle = '#F5F5DC';
+        this.ctx.fillRect(
+            building.x - 50,
+            building.y + building.height + 20,
+            building.width + 100,
+            40
+        );
+        
+        // Zen garden patterns
+        this.ctx.strokeStyle = '#D3D3D3';
+        this.ctx.beginPath();
+        for(let i = 0; i < 15; i++) {
+            const x = building.x - 50 + (i * 30);
+            const y = building.y + building.height + 20;
+            // Draw angular patterns instead of curves
+            this.ctx.moveTo(x, y);
+            this.ctx.lineTo(x + 15, y + 20);
+            this.ctx.lineTo(x, y + 40);
+        }
+        this.ctx.stroke();
+        
+        // Meditation stones (squares)
+        this.ctx.fillStyle = '#696969';
+        this.ctx.fillRect(
+            building.x + building.width/2 - 45,
+            building.y + building.height + 35,
+            20, 20
+        );
+        this.ctx.fillRect(
+            building.x + building.width/2 + 25,
+            building.y + building.height + 35,
+            20, 20
+        );
     }
 
     drawNobleDetails(building) {
@@ -518,11 +854,24 @@ class Game {
             }
         });
 
-        this.activeNPC = nearestNPC;
-        this.showInteractionPrompt = !!nearestNPC;
+        // Update interaction state
+        if (nearestNPC) {
+            this.activeNPC = nearestNPC;
+            this.showInteractionPrompt = true;
+        } else {
+            this.activeNPC = null;
+            this.showInteractionPrompt = false;
+            // Close dialogue if player moves away
+            if (this.dialogueActive) {
+                this.dialogueActive = false;
+                this.currentDialogue = null;
+            }
+        }
     }
 
     startDialogue(npc) {
+        if (!npc) return;
+        
         this.dialogueActive = true;
         this.currentDialogue = {
             npc: npc,
@@ -532,7 +881,7 @@ class Game {
     }
 
     advanceDialogue() {
-        if (!this.currentDialogue) return;
+        if (!this.dialogueActive || !this.currentDialogue) return;
 
         this.currentDialogue.conversationIndex++;
         const conversations = this.npcDialogues[this.currentDialogue.npc.type].conversations;
@@ -545,33 +894,82 @@ class Game {
         }
     }
 
+    drawInteractionPrompt() {
+        if (!this.showInteractionPrompt || this.dialogueActive) return;
+
+        const text = 'Press E to interact';
+        this.ctx.save();
+        this.ctx.translate(-this.camera.x, 0);
+        this.ctx.font = '16px Cinzel';  // Increased font size
+        this.ctx.fillStyle = '#FFD700';  // Changed to gold color
+        this.ctx.textAlign = 'center';
+        
+        // Add background for better visibility
+        const textWidth = this.ctx.measureText(text).width;
+        const padding = 10;
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        this.ctx.fillRect(
+            this.activeNPC.x + this.activeNPC.width/2 - textWidth/2 - padding,
+            this.activeNPC.y - 40,
+            textWidth + padding * 2,
+            30
+        );
+        
+        // Draw text
+        this.ctx.fillStyle = '#FFD700';
+        this.ctx.fillText(text, 
+            this.activeNPC.x + this.activeNPC.width/2,
+            this.activeNPC.y - 20);
+        this.ctx.restore();
+    }
+
     drawDialogue() {
         if (!this.dialogueActive || !this.currentDialogue) return;
 
-        // Draw dialogue box
+        // Draw dialogue box with improved visibility
         const padding = 20;
         const boxWidth = this.canvas.width * 0.6;
-        const boxHeight = 100;
+        const boxHeight = 120;  // Increased height
         const boxX = (this.canvas.width - boxWidth) / 2;
         const boxY = this.canvas.height - boxHeight - 50;
 
-        // Box background
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        // Box background with higher opacity
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
         this.ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
-        this.ctx.strokeStyle = '#C7A353';
+        
+        // Decorative border
+        this.ctx.strokeStyle = '#FFD700';
+        this.ctx.lineWidth = 3;
         this.ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
 
-        // Text
-        this.ctx.fillStyle = '#FFFFFF';
-        this.ctx.font = '18px Cinzel';
+        // NPC name
+        this.ctx.font = 'bold 18px Cinzel';
+        this.ctx.fillStyle = '#FFD700';
         this.ctx.textAlign = 'left';
-        this.wrapText(this.currentDialogue.text, boxX + padding, boxY + padding + 20, boxWidth - padding * 2);
+        this.ctx.fillText(
+            this.currentDialogue.npc.type.charAt(0).toUpperCase() + this.currentDialogue.npc.type.slice(1),
+            boxX + padding,
+            boxY + padding + 10
+        );
 
-        // Prompt
+        // Dialogue text
+        this.ctx.font = '16px Cinzel';
+        this.ctx.fillStyle = '#FFFFFF';
+        this.wrapText(
+            this.currentDialogue.text,
+            boxX + padding,
+            boxY + padding + 40,
+            boxWidth - padding * 2
+        );
+
+        // Continue prompt with animation
+        const promptText = 'Press E to continue';
         this.ctx.font = '14px Cinzel';
-        this.ctx.fillStyle = '#C7A353';
+        this.ctx.fillStyle = '#FFD700';
         this.ctx.textAlign = 'right';
-        this.ctx.fillText('Press E to continue', boxX + boxWidth - padding, boxY + boxHeight - padding);
+        this.ctx.globalAlpha = 0.5 + Math.sin(Date.now() * 0.005) * 0.5;  // Pulsing animation
+        this.ctx.fillText(promptText, boxX + boxWidth - padding, boxY + boxHeight - padding);
+        this.ctx.globalAlpha = 1;  // Reset opacity
     }
 
     wrapText(text, x, y, maxWidth) {
@@ -595,33 +993,369 @@ class Game {
         this.ctx.fillText(line, x, y);
     }
 
-    drawInteractionPrompt() {
-        if (!this.showInteractionPrompt || this.dialogueActive) return;
-
-        const text = 'Press E to interact';
+    toggleMeditation() {
+        if (!this.meditation.active && this.dojoInteraction.nearDojo) {
+            this.meditation.active = true;
+            this.meditation.duration = 0;
+            this.player.isMoving = false;
+        } else {
+            this.meditation.active = false;
+        }
+    }
+    
+    updateMeditation(timestamp) {
+        if (!this.meditation.active) return;
+        
+        // Increment meditation duration
+        this.meditation.duration += 1/60; // Assuming 60 FPS
+        
+        // Update benefits
+        this.meditation.benefits.peace = Math.min(100, this.meditation.benefits.peace + 0.1);
+        this.meditation.benefits.wisdom = Math.min(100, this.meditation.benefits.wisdom + 0.05);
+        
+        // Visual effects during meditation
+        this.drawMeditationEffects();
+    }
+    
+    drawMeditationEffects() {
+        if (!this.meditation.active) return;
+        
+        // Draw peaceful aura around player as a square
         this.ctx.save();
         this.ctx.translate(-this.camera.x, 0);
-        this.ctx.font = '14px Cinzel';
-        this.ctx.fillStyle = '#FFFFFF';
+        
+        // Create square aura
+        const auraSize = 200;
+        const x = this.player.x + this.player.width/2 - auraSize/2;
+        const y = this.player.y + this.player.height/2 - auraSize/2;
+        
+        // Draw layered squares for aura effect
+        for(let i = 0; i < 5; i++) {
+            const size = auraSize - (i * 40);
+            const opacity = 0.2 - (i * 0.04);
+            this.ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+            this.ctx.fillRect(
+                x + (auraSize - size)/2,
+                y + (auraSize - size)/2,
+                size,
+                size
+            );
+        }
+        
+        // Draw meditation timer
+        this.ctx.font = '16px Cinzel';
+        this.ctx.fillStyle = 'white';
         this.ctx.textAlign = 'center';
-        this.ctx.fillText(text, 
-            this.activeNPC.x + this.activeNPC.width/2,
-            this.activeNPC.y - 20);
+        this.ctx.fillText(
+            `Meditating: ${Math.floor(this.meditation.duration)}s`,
+            this.player.x + this.player.width/2,
+            this.player.y - 20
+        );
+        
+        this.ctx.restore();
+    }
+    
+    checkDojoInteraction() {
+        // Find the dojo building
+        const dojo = this.buildings.find(b => b.type === 'dojo');
+        if (!dojo) return;
+        
+        // Check if player is near the dojo
+        const dojoCenter = {
+            x: dojo.x + dojo.width/2,
+            y: dojo.y + dojo.height/2
+        };
+        
+        const playerCenter = {
+            x: this.player.x + this.player.width/2,
+            y: this.player.y + this.player.height/2
+        };
+        
+        const dx = dojoCenter.x - playerCenter.x;
+        const dy = dojoCenter.y - playerCenter.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        this.dojoInteraction.nearDojo = distance < 150;
+        this.dojoInteraction.meditationPrompt = this.dojoInteraction.nearDojo && !this.meditation.active;
+    }
+    
+    drawDojoPrompt() {
+        if (!this.dojoInteraction.meditationPrompt) return;
+        
+        this.ctx.save();
+        this.ctx.translate(-this.camera.x, 0);
+        
+        // Draw meditation prompt
+        this.ctx.font = '14px Cinzel';
+        this.ctx.fillStyle = '#FFD700';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText(
+            'Press M to meditate',
+            this.player.x + this.player.width/2,
+            this.player.y - 40
+        );
+        
         this.ctx.restore();
     }
 
+    checkShrineInteraction() {
+        if (this.meditation.active || this.offeringAnimation.active) return;
+
+        let nearestShrine = null;
+        let shortestDistance = 150; // Interaction radius for shrines
+
+        this.shrines.forEach(shrine => {
+            const dx = (this.player.x + this.player.width/2) - (shrine.x + shrine.width/2);
+            const dy = (this.player.y + this.player.height/2) - (shrine.y + shrine.height/2);
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < shortestDistance) {
+                shortestDistance = distance;
+                nearestShrine = shrine;
+            }
+        });
+
+        if (nearestShrine && !nearestShrine.completed) {
+            this.showShrinePrompt(nearestShrine);
+        }
+    }
+
+    showShrinePrompt(shrine) {
+        this.ctx.save();
+        this.ctx.translate(-this.camera.x, 0);
+        
+        // Draw prompt
+        this.ctx.font = '14px Cinzel';
+        this.ctx.fillStyle = '#FFD700';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText(
+            'Press E to make an offering',
+            shrine.x + shrine.width/2,
+            shrine.y - 40
+        );
+        
+        this.ctx.restore();
+    }
+
+    startOfferingAnimation(shrine) {
+        if (shrine.completed || this.offeringAnimation.active) return;
+
+        this.offeringAnimation = {
+            active: true,
+            shrine: shrine,
+            startTime: Date.now(),
+            duration: 3000,
+            initialPlayerY: this.player.y,
+            floatHeight: 100
+        };
+
+        // Mark shrine as completed and update yin yang meter
+        shrine.completed = true;
+        this.spiritualProgress.totalShrinesCompleted++;
+        this.yinYangMeter.progress = this.spiritualProgress.totalShrinesCompleted / this.shrines.length;
+
+        // Show wisdom message after animation
+        setTimeout(() => {
+            this.showShrineCompletionMessage(shrine);
+        }, this.offeringAnimation.duration);
+    }
+
+    updateOfferingAnimation() {
+        if (!this.offeringAnimation.active) return;
+
+        const elapsed = Date.now() - this.offeringAnimation.startTime;
+        const progress = elapsed / this.offeringAnimation.duration;
+
+        if (progress >= 1) {
+            this.offeringAnimation.active = false;
+            // Reset player position if needed
+            this.player.y = this.offeringAnimation.initialPlayerY;
+            // Lock player position during animation
+            this.player.velocityX = 0;
+            return;
+        }
+
+        // Calculate player floating animation
+        // Use sine wave for smooth up and down motion
+        const floatProgress = Math.sin(progress * Math.PI);
+        this.player.y = this.offeringAnimation.initialPlayerY - (floatProgress * this.offeringAnimation.floatHeight);
+        
+        // Lock player horizontal movement during animation
+        this.player.velocityX = 0;
+    }
+
+    drawOfferingAnimation() {
+        if (!this.offeringAnimation.active) return;
+
+        this.ctx.save();
+        this.ctx.translate(-this.camera.x, 0);
+
+        const elapsed = Date.now() - this.offeringAnimation.startTime;
+        const progress = elapsed / this.offeringAnimation.duration;
+        
+        // Calculate player center - update continuously to follow player
+        const playerCenterX = this.player.x + this.player.width/2;
+        
+        // Create gradient for main light beam
+        const gradient = this.ctx.createLinearGradient(
+            playerCenterX,
+            0,
+            playerCenterX,
+            this.map.ground.y
+        );
+        gradient.addColorStop(0, `rgba(255, 223, 0, ${0.8 * (1 - progress)})`);
+        gradient.addColorStop(1, `rgba(255, 223, 0, ${0.4 * (1 - progress)})`);
+
+        // Draw main light beam from sky to ground, centered on player
+        this.ctx.fillStyle = gradient;
+        const beamWidth = 40 + Math.sin(progress * Math.PI) * 20;
+        this.ctx.fillRect(
+            playerCenterX - beamWidth/2,
+            0,
+            beamWidth,
+            this.map.ground.y + 10 // Extend slightly into ground for seamless connection
+        );
+
+        // Draw impact effect on the ground, centered on player
+        const impactWidth = beamWidth * 2 + Math.sin(progress * Math.PI * 4) * 20;
+        const impactHeight = 20 + Math.sin(progress * Math.PI * 4) * 10;
+        this.ctx.fillStyle = `rgba(255, 223, 0, ${0.6 * (1 - progress)})`;
+        this.ctx.fillRect(
+            playerCenterX - impactWidth/2,
+            this.map.ground.y - impactHeight/2,
+            impactWidth,
+            impactHeight
+        );
+
+        // Draw horizontal light rays, centered on player
+        const rayCount = 5;
+        for(let i = 0; i < rayCount; i++) {
+            const rayY = this.map.ground.y - (i * 50) - progress * 50;
+            if (rayY > 0) {
+                const rayWidth = beamWidth + 40 + Math.sin((progress + i) * Math.PI) * 20;
+                this.ctx.fillStyle = `rgba(255, 223, 0, ${0.2 * (1 - progress)})`;
+                this.ctx.fillRect(
+                    playerCenterX - rayWidth/2,
+                    rayY,
+                    rayWidth,
+                    10
+                );
+            }
+        }
+
+        this.ctx.restore();
+    }
+
+    showShrineCompletionMessage(shrine) {
+        const message = {
+            title: `${shrine.name} Blessed!`,
+            text: shrine.wisdom,
+            effect: `Shrines Completed: ${this.spiritualProgress.totalShrinesCompleted}/${this.shrines.length}`
+        };
+        
+        this.showMessage(message);
+
+        // Check for game completion
+        if (this.spiritualProgress.totalShrinesCompleted >= this.shrines.length) {
+            setTimeout(() => this.showGameCompletion(), 3000);
+        }
+    }
+
+    showGameCompletion() {
+        const message = {
+            title: "Inner Peace Achieved!",
+            text: "You have completed your spiritual journey and found true inner peace.",
+            footer: "Thank you for playing!"
+        };
+        
+        this.showMessage(message);
+    }
+
+    showMessage(message) {
+        // Draw message box
+        const boxWidth = this.canvas.width * 0.6;
+        const boxHeight = 150;
+        const boxX = (this.canvas.width - boxWidth) / 2;
+        const boxY = (this.canvas.height - boxHeight) / 2;
+
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        this.ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+        this.ctx.strokeStyle = '#C7A353';
+        this.ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+
+        // Draw message content
+        this.ctx.font = '24px Cinzel';
+        this.ctx.fillStyle = '#FFD700';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText(message.title, boxX + boxWidth/2, boxY + 40);
+
+        this.ctx.font = '16px Cinzel';
+        this.ctx.fillStyle = '#FFFFFF';
+        this.ctx.fillText(message.text, boxX + boxWidth/2, boxY + 80);
+
+        if (message.requirement) {
+            this.ctx.fillStyle = '#C7A353';
+            this.ctx.fillText(message.requirement, boxX + boxWidth/2, boxY + 110);
+        }
+
+        if (message.effect) {
+            this.ctx.fillStyle = '#90EE90';
+            this.ctx.fillText(message.effect, boxX + boxWidth/2, boxY + 110);
+        }
+
+        if (message.footer) {
+            this.ctx.fillStyle = '#FFD700';
+            this.ctx.fillText(message.footer, boxX + boxWidth/2, boxY + 130);
+        }
+    }
+
+    findNearestShrine() {
+        let nearest = null;
+        let shortestDistance = 150;
+
+        this.shrines.forEach(shrine => {
+            const dx = (this.player.x + this.player.width/2) - (shrine.x + shrine.width/2);
+            const dy = (this.player.y + this.player.height/2) - (shrine.y + shrine.height/2);
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < shortestDistance) {
+                shortestDistance = distance;
+                nearest = shrine;
+            }
+        });
+
+        return nearest;
+    }
+
+    handleJump() {
+        if (this.player.jumpCount < this.player.maxJumps) {
+            this.player.velocityY = this.physics.jumpForce;
+            this.player.isJumping = true;
+            this.player.isGrounded = false;
+            this.player.jumpCount++;
+        }
+    }
+
     update(timestamp) {
-        this.updatePlayerPosition();
+        if (!this.meditation.active && !this.offeringAnimation.active) {
+            this.updatePlayerPosition();
+            this.updatePlayerPhysics();
+        }
         this.updateCamera();
         this.updateClouds();
         this.checkNPCInteraction();
+        this.checkDojoInteraction();
+        this.checkShrineInteraction();
+        this.updateMeditation(timestamp);
+        this.updateOfferingAnimation();
         this.updateUI();
         
         // Update animation frame
         if (timestamp - this.lastFrameTime > this.animationSpeed) {
-            const animation = this.animations[this.player.state];
-            
-            this.currentFrame = (this.currentFrame + 1) % animation.frames;
+            if (!this.meditation.active) {
+                const animation = this.animations[this.player.state];
+                this.currentFrame = (this.currentFrame + 1) % animation.frames;
+            }
             
             // Update NPCs
             this.npcs.forEach(npc => {
@@ -633,8 +1367,222 @@ class Game {
     }
     
     updateUI() {
-        // Peaceful version - no health/mana bars
-        // Could add meditation or peace indicators here if needed
+        // Draw the yin yang meter
+        this.drawYinYangMeter();
+        
+        // Draw the control guide
+        this.drawControlGuide();
+
+        // Draw the game panel
+        if (this.gamePanel) {
+            this.drawGamePanel();
+        }
+    }
+    
+    drawYinYangMeter() {
+        const { size, x, y, progress } = this.yinYangMeter;
+        const centerX = x + size/2;
+        const centerY = y + size/2;
+        const radius = size/2;
+
+        // Draw outer circle background
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        this.ctx.fillStyle = '#2A4858';
+        this.ctx.fill();
+        this.ctx.strokeStyle = '#90A955';
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+
+        // Only draw the symbol if there's any progress
+        if (progress > 0) {
+            // Save context for clipping
+            this.ctx.save();
+            
+            // Create clipping path based on progress
+            this.ctx.beginPath();
+            this.ctx.moveTo(centerX, centerY);
+            this.ctx.arc(centerX, centerY, radius, -Math.PI/2, -Math.PI/2 + (2 * Math.PI * progress));
+            this.ctx.closePath();
+            this.ctx.clip();
+
+            // Draw the complete yin-yang symbol
+            // White half
+            this.ctx.beginPath();
+            this.ctx.arc(centerX, centerY, radius, Math.PI/2, -Math.PI/2);
+            this.ctx.fillStyle = '#FFFFFF';
+            this.ctx.fill();
+
+            // Black half
+            this.ctx.beginPath();
+            this.ctx.arc(centerX, centerY, radius, -Math.PI/2, Math.PI/2);
+            this.ctx.fillStyle = '#000000';
+            this.ctx.fill();
+
+            // White swirl
+            this.ctx.beginPath();
+            this.ctx.arc(centerX, centerY - radius/2, radius/2, -Math.PI/2, Math.PI/2);
+            this.ctx.fillStyle = '#FFFFFF';
+            this.ctx.fill();
+
+            // Black swirl
+            this.ctx.beginPath();
+            this.ctx.arc(centerX, centerY + radius/2, radius/2, Math.PI/2, -Math.PI/2);
+            this.ctx.fillStyle = '#000000';
+            this.ctx.fill();
+
+            // Small black dot
+            this.ctx.beginPath();
+            this.ctx.arc(centerX, centerY - radius/2, radius/8, 0, Math.PI * 2);
+            this.ctx.fillStyle = '#000000';
+            this.ctx.fill();
+
+            // Small white dot
+            this.ctx.beginPath();
+            this.ctx.arc(centerX, centerY + radius/2, radius/8, 0, Math.PI * 2);
+            this.ctx.fillStyle = '#FFFFFF';
+            this.ctx.fill();
+
+            // Restore context
+            this.ctx.restore();
+        }
+
+        // Draw border again to ensure it's always visible
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        this.ctx.strokeStyle = '#90A955';
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+    }
+    
+    drawControlGuide() {
+        this.ctx.save();
+
+        // Update position based on current window width
+        this.controlGuide.x = this.canvas.width - 200;
+
+        // Draw background
+        this.ctx.fillStyle = 'rgba(42, 72, 88, 0.8)';  // Match game's color scheme
+        this.ctx.fillRect(
+            this.controlGuide.x,
+            this.controlGuide.y,
+            this.controlGuide.width,
+            this.controlGuide.controls.length * 25 + 20  // Height based on number of controls
+        );
+
+        // Draw border
+        this.ctx.strokeStyle = '#90A955';  // Sage green border
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(
+            this.controlGuide.x,
+            this.controlGuide.y,
+            this.controlGuide.width,
+            this.controlGuide.controls.length * 25 + 20
+        );
+
+        // Draw controls
+        this.controlGuide.controls.forEach((control, index) => {
+            const y = this.controlGuide.y + 20 + (index * 25);
+            
+            // Draw key background
+            this.ctx.fillStyle = '#90A955';  // Sage green for key background
+            this.ctx.fillRect(
+                this.controlGuide.x + 10,
+                y - 10,
+                60,
+                20
+            );
+
+            // Draw key text
+            this.ctx.font = '12px monospace';
+            this.ctx.fillStyle = '#FFFFFF';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText(
+                control.key,
+                this.controlGuide.x + 40,
+                y + 4
+            );
+
+            // Draw action text
+            this.ctx.font = '12px Cinzel';
+            this.ctx.fillStyle = '#FFFFFF';
+            this.ctx.textAlign = 'left';
+            this.ctx.fillText(
+                control.action,
+                this.controlGuide.x + 80,
+                y + 4
+            );
+        });
+
+        this.ctx.restore();
+    }
+    
+    drawGamePanel() {
+        const panel = this.gamePanel;
+        
+        // Update stats
+        panel.sections[0].stats[0].value = Math.floor(this.meditation.benefits.peace);
+        panel.sections[0].stats[1].value = Math.floor(this.meditation.benefits.wisdom);
+        panel.sections[1].stats[0].value = this.spiritualProgress.totalShrinesCompleted;
+        panel.sections[1].stats[1].value = Math.floor(this.meditation.duration / 60);
+
+        // Draw panel background with more opacity
+        this.ctx.fillStyle = 'rgba(42, 72, 88, 0.95)';
+        this.ctx.fillRect(panel.x, panel.y, panel.width, panel.height);
+
+        // Draw border with thicker line
+        this.ctx.strokeStyle = '#90A955';
+        this.ctx.lineWidth = 3;
+        this.ctx.strokeRect(panel.x, panel.y, panel.width, panel.height);
+
+        let currentY = panel.y + 20;
+
+        // Draw sections
+        panel.sections.forEach(section => {
+            // Draw section title with shadow for better visibility
+            this.ctx.font = 'bold 16px Cinzel';
+            this.ctx.fillStyle = '#FFD700';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText(section.title, panel.x + panel.width/2, currentY);
+            currentY += 30;
+
+            // Draw stats
+            section.stats.forEach(stat => {
+                // Draw stat label
+                this.ctx.font = '14px Cinzel';
+                this.ctx.fillStyle = '#FFFFFF';
+                this.ctx.textAlign = 'left';
+                this.ctx.fillText(stat.label, panel.x + 15, currentY);
+
+                // Draw stat value
+                const valueText = stat.unit ? 
+                    `${stat.value}${stat.unit}` : 
+                    `${stat.value}/${stat.max}`;
+                this.ctx.textAlign = 'right';
+                this.ctx.fillText(valueText, panel.x + panel.width - 15, currentY);
+
+                // Draw progress bar if stat has max value
+                if (stat.max) {
+                    const barWidth = panel.width - 30;
+                    const barHeight = 6;  // Slightly thicker bars
+                    const barX = panel.x + 15;
+                    const barY = currentY + 5;
+
+                    // Draw background
+                    this.ctx.fillStyle = '#2A4858';
+                    this.ctx.fillRect(barX, barY, barWidth, barHeight);
+
+                    // Draw progress
+                    this.ctx.fillStyle = '#90A955';
+                    const progress = Math.min(1, stat.value / stat.max);
+                    this.ctx.fillRect(barX, barY, barWidth * progress, barHeight);
+                }
+
+                currentY += 30;  // Increased spacing between stats
+            });
+
+            currentY += 15; // Add more space between sections
+        });
     }
     
     render() {
@@ -664,9 +1612,19 @@ class Game {
         // Restore context
         this.ctx.restore();
 
-        // Draw interaction prompt and dialogue (in screen space)
+        // Draw UI elements (in screen space)
+        this.updateUI();
+
+        // Draw interaction prompt and dialogue
         this.drawInteractionPrompt();
         this.drawDialogue();
+
+        // Draw meditation effects and prompts
+        this.drawMeditationEffects();
+        this.drawDojoPrompt();
+
+        // Draw offering animation on top of everything
+        this.drawOfferingAnimation();
     }
     
     drawGroundDecorations() {
@@ -677,12 +1635,10 @@ class Game {
             this.ctx.fillRect(x, this.map.ground.y - height, 50, height);
         }
 
-        // Draw small flowers or stones
+        // Draw small square stones instead of flowers
         for (let x = 20; x < this.map.width; x += 200) {
             this.ctx.fillStyle = '#FFFFFF';
-            this.ctx.beginPath();
-            this.ctx.arc(x, this.map.ground.y - 5, 3, 0, Math.PI * 2);
-            this.ctx.fill();
+            this.ctx.fillRect(x - 2, this.map.ground.y - 7, 4, 4);
         }
     }
 

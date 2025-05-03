@@ -39,6 +39,7 @@ body {
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    overflow: hidden;
 }
 
 .japanese-pattern {
@@ -52,6 +53,22 @@ body {
         transparent 8px
     );
     opacity: 0.2;
+    position: relative;
+}
+
+.japanese-pattern::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    animation: patternShine 3s linear infinite;
+}
+
+@keyframes patternShine {
+    to { transform: translateX(50%); }
 }
 
 .japanese-pattern.top {
@@ -70,40 +87,102 @@ body {
     padding: 3rem;
     background: rgba(42, 72, 88, 0.95);
     border: 2px solid var(--accent-sage);
-    border-radius: 10px;
+    border-radius: 0;
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
     position: relative;
     max-width: 800px;
     width: 90%;
+    backdrop-filter: blur(10px);
+}
+
+.start-content::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, var(--accent-sage), transparent);
+    border-radius: 0;
+    z-index: -1;
+    opacity: 0.3;
+    animation: borderGlow 3s ease-in-out infinite alternate;
+}
+
+@keyframes borderGlow {
+    from { opacity: 0.3; }
+    to { opacity: 0.6; }
 }
 
 .title-container {
     margin-bottom: 3rem;
+    position: relative;
+}
+
+.lantern {
+    position: absolute;
+    width: 30px;
+    height: 45px;
+    background: var(--accent-sage);
+    top: 50%;
+    transform: translateY(-50%);
+    box-shadow: 0 0 10px rgba(255, 223, 0, 0.3);
+}
+
+.lantern::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: var(--accent-sage);
+    animation: lanternGlow 2s ease-in-out infinite alternate;
+}
+
+.lantern.left {
+    left: -60px;
+    animation: lanternSwayLeft 3s ease-in-out infinite;
+}
+
+.lantern.right {
+    right: -60px;
+    animation: lanternSwayRight 3s ease-in-out infinite;
+}
+
+@keyframes lanternGlow {
+    from { opacity: 0.5; transform: scale(1); }
+    to { opacity: 1; transform: scale(1.1); }
+}
+
+@keyframes lanternSwayLeft {
+    0%, 100% { transform: translateY(-50%) rotate(-5deg); }
+    50% { transform: translateY(-45%) rotate(5deg); }
+}
+
+@keyframes lanternSwayRight {
+    0%, 100% { transform: translateY(-50%) rotate(5deg); }
+    50% { transform: translateY(-45%) rotate(-5deg); }
 }
 
 .game-title {
     font-size: 3.5rem;
     color: var(--paper-white);
-    text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+    text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3),
+                 0 0 20px rgba(168, 216, 234, 0.3);
     position: relative;
     margin-bottom: 1rem;
+    animation: titleFloat 4s ease-in-out infinite;
+}
+
+@keyframes titleFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
 }
 
 .subtitle {
     font-size: 1.5rem;
     color: var(--primary-soft);
     margin-top: 1rem;
-}
-
-.game-title::after {
-    content: '';
-    position: absolute;
-    bottom: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100px;
-    height: 3px;
-    background: var(--accent-sage);
+    text-shadow: 0 0 10px rgba(168, 216, 234, 0.3);
 }
 
 .start-buttons {
@@ -118,7 +197,7 @@ body {
     font-size: 1.2rem;
     font-family: 'Cinzel', serif;
     border: 2px solid var(--accent-sage);
-    border-radius: 5px;
+    border-radius: 0;
     cursor: pointer;
     transition: all 0.3s ease;
     background: transparent;
@@ -148,11 +227,27 @@ body {
 }
 
 .btn-primary {
-    background: var(--accent-sage);
+    padding: 1.2rem 3rem;
+    font-size: 1.3rem;
+    font-family: 'Cinzel', serif;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: linear-gradient(45deg, var(--accent-sage), #7A9046);
+    color: var(--paper-white);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .btn-primary:hover {
-    background: #7A9046;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.btn-primary:hover::before {
+    left: 100%;
 }
 
 .btn-secondary:hover {
@@ -163,8 +258,10 @@ body {
     text-align: left;
     padding: 2rem;
     background: rgba(42, 72, 88, 0.5);
-    border-radius: 5px;
+    border-radius: 0;
     border: 1px solid var(--accent-sage);
+    margin-top: 2rem;
+    backdrop-filter: blur(5px);
 }
 
 .controls-guide h3 {
@@ -172,12 +269,14 @@ body {
     margin-bottom: 1.5rem;
     color: var(--primary-soft);
     font-size: 1.5rem;
+    text-shadow: 0 0 10px rgba(168, 216, 234, 0.3);
 }
 
 .controls-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 1rem;
+    justify-items: center;
 }
 
 .control-item {
@@ -185,22 +284,29 @@ body {
     align-items: center;
     gap: 1rem;
     padding: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.control-item:hover {
+    transform: translateX(5px);
 }
 
 .key {
-    background: var(--accent-sage);
+    background: linear-gradient(45deg, var(--accent-sage), #7A9046);
     color: var(--paper-white);
-    padding: 0.3rem 0.6rem;
-    border-radius: 3px;
+    padding: 0.4rem 0.8rem;
+    border-radius: 0;
     font-family: monospace;
     font-size: 0.9rem;
-    min-width: 50px;
+    min-width: 60px;
     text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .action {
     color: var(--paper-white);
     font-size: 0.9rem;
+    text-shadow: 0 0 5px rgba(168, 216, 234, 0.3);
 }
 
 /* Game Container Styles */
@@ -234,7 +340,7 @@ body {
 .meditation-indicator {
     background: rgba(42, 72, 88, 0.8);
     padding: 15px;
-    border-radius: 5px;
+    border-radius: 0;
     border: 2px solid var(--accent-sage);
     text-align: center;
     color: var(--paper-white);
