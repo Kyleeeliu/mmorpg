@@ -1,133 +1,160 @@
 class Game {
     constructor() {
-        this.canvas = document.getElementById('gameCanvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.npcs = [];
-        // this.chatMessages = []; // Temporarily removed
-        
-        // Initialize start screen
-        this.initStartScreen();
-        
-        // Set canvas size
-        this.resizeCanvas();
-        window.addEventListener('resize', () => this.resizeCanvas());
-
-        // Sprite properties
-        this.spriteWidth = 23;
-        this.spriteHeight = 25;
-        this.canvasWidth = 48;
-        this.canvasHeight = 32;
-        
-        // Animation states
-        this.animations = {
-            idle: { frames: 4, row: 0 },
-            walk: { frames: 4, row: 1 },
-            run: { frames: 8, row: 2 }  // Restored running animation
-        };
-
-        // Animation timing
-        this.currentFrame = 0;
-        this.frameCount = 4;
-        this.animationSpeed = 100;
-        this.lastFrameTime = 0;
-        
-        // Movement state
-        this.keys = {
-            a: false,
-            d: false,
-            e: false,
-            shift: false  // Restored shift key for running
-        };
-
-        // Map properties
-        this.map = {
-            width: 2000,
-            height: window.innerHeight,
-            ground: { y: window.innerHeight - 100, height: 100 }
-        };
-
-        // Town buildings
-        this.buildings = [
-            { x: 50, y: this.map.ground.y - 200, width: 200, height: 200, type: 'house', style: 'traditional' },
-            { x: 350, y: this.map.ground.y - 180, width: 180, height: 180, type: 'shop', style: 'merchant' },
-            { x: 650, y: this.map.ground.y - 220, width: 220, height: 220, type: 'dojo', style: 'temple' },
-            { x: 950, y: this.map.ground.y - 190, width: 190, height: 190, type: 'house', style: 'noble' }
-        ];
-
-        // Interaction system
-        this.interactionRadius = 50;
-        this.activeNPC = null;
-        this.showInteractionPrompt = false;
-        this.dialogueActive = false;
-        this.currentDialogue = null;
-
-        // NPC dialogues
-        this.npcDialogues = {
-            villager: {
-                greeting: "Welcome to our peaceful town, traveler!",
-                conversations: [
-                    "The cherry blossoms are beautiful this time of year.",
-                    "Have you visited the merchant's shop? He has rare items.",
-                    "Our town is known for its peaceful way of life."
-                ]
-            },
-            lord: {
-                greeting: "Ah, a new face in our humble town.",
-                conversations: [
-                    "The dojo up ahead teaches meditation and inner peace.",
-                    "As the town's lord, I ensure everyone lives in harmony.",
-                    "Perhaps you'd like to settle here? We welcome peaceful souls."
-                ]
-            },
-            ronin: {
-                greeting: "Peace be with you, wanderer.",
-                conversations: [
-                    "I've found tranquility in tending to the garden.",
-                    "The townspeople here showed me the beauty of peace.",
-                    "Each day brings new opportunities for mindfulness."
-                ]
+        try {
+            this.canvas = document.getElementById('gameCanvas');
+            if (!this.canvas) {
+                throw new Error('Could not find game canvas element');
             }
-        };
+            
+            this.ctx = this.canvas.getContext('2d');
+            if (!this.ctx) {
+                throw new Error('Could not get 2D context from canvas');
+            }
+            
+            this.npcs = [];
+            // this.chatMessages = []; // Temporarily removed
+            
+            // Initialize start screen
+            this.initStartScreen();
+            
+            // Set canvas size
+            this.resizeCanvas();
+            window.addEventListener('resize', () => this.resizeCanvas());
 
-        // Camera/viewport properties
-        this.camera = {
-            x: 0,
-            y: 0
-        };
+            // Sprite properties
+            this.spriteWidth = 23;
+            this.spriteHeight = 25;
+            this.canvasWidth = 48;
+            this.canvasHeight = 32;
+            
+            // Animation states
+            this.animations = {
+                idle: { frames: 4, row: 0 },
+                walk: { frames: 4, row: 1 },
+                run: { frames: 8, row: 2 }  // Restored running animation
+            };
 
-        // Sky properties
-        this.sky = {
-            time: new Date(),
-            stars: Array.from({ length: 100 }, () => ({
-                x: Math.random() * 2000,
-                y: Math.random() * (window.innerHeight - 200),
-                size: Math.random() * 2 + 1,
-                twinkle: Math.random()
-            })),
-            clouds: Array.from({ length: 15 }, () => ({
-                x: Math.random() * 2000,
-                y: Math.random() * (window.innerHeight / 2),
-                width: Math.random() * 150 + 100,
-                height: Math.random() * 40 + 30,
-                speed: Math.random() * 0.2 + 0.1,
-                opacity: Math.random() * 0.3 + 0.1
-            }))
-        };
+            // Animation timing
+            this.currentFrame = 0;
+            this.frameCount = 4;
+            this.animationSpeed = 100;
+            this.lastFrameTime = 0;
+            
+            // Movement state
+            this.keys = {
+                a: false,
+                d: false,
+                e: false,
+                shift: false  // Restored shift key for running
+            };
 
-        // Start sky update interval
-        setInterval(() => this.updateSkyTime(), 60000);
+            // Map properties
+            this.map = {
+                width: 2000,
+                height: window.innerHeight,
+                ground: { y: window.innerHeight - 100, height: 100 }
+            };
+
+            // Town buildings
+            this.buildings = [
+                { x: 50, y: this.map.ground.y - 200, width: 200, height: 200, type: 'house', style: 'traditional' },
+                { x: 350, y: this.map.ground.y - 180, width: 180, height: 180, type: 'shop', style: 'merchant' },
+                { x: 650, y: this.map.ground.y - 220, width: 220, height: 220, type: 'dojo', style: 'temple' },
+                { x: 950, y: this.map.ground.y - 190, width: 190, height: 190, type: 'house', style: 'noble' }
+            ];
+
+            // Interaction system
+            this.interactionRadius = 50;
+            this.activeNPC = null;
+            this.showInteractionPrompt = false;
+            this.dialogueActive = false;
+            this.currentDialogue = null;
+
+            // NPC dialogues
+            this.npcDialogues = {
+                villager: {
+                    greeting: "Welcome to our peaceful town, traveler!",
+                    conversations: [
+                        "The cherry blossoms are beautiful this time of year.",
+                        "Have you visited the merchant's shop? He has rare items.",
+                        "Our town is known for its peaceful way of life."
+                    ]
+                },
+                lord: {
+                    greeting: "Ah, a new face in our humble town.",
+                    conversations: [
+                        "The dojo up ahead teaches meditation and inner peace.",
+                        "As the town's lord, I ensure everyone lives in harmony.",
+                        "Perhaps you'd like to settle here? We welcome peaceful souls."
+                    ]
+                },
+                ronin: {
+                    greeting: "Peace be with you, wanderer.",
+                    conversations: [
+                        "I've found tranquility in tending to the garden.",
+                        "The townspeople here showed me the beauty of peace.",
+                        "Each day brings new opportunities for mindfulness."
+                    ]
+                }
+            };
+
+            // Camera/viewport properties
+            this.camera = {
+                x: 0,
+                y: 0
+            };
+
+            // Sky properties
+            this.sky = {
+                time: new Date(),
+                stars: Array.from({ length: 100 }, () => ({
+                    x: Math.random() * 2000,
+                    y: Math.random() * (window.innerHeight - 200),
+                    size: Math.random() * 2 + 1,
+                    twinkle: Math.random()
+                })),
+                clouds: Array.from({ length: 15 }, () => ({
+                    x: Math.random() * 2000,
+                    y: Math.random() * (window.innerHeight / 2),
+                    width: Math.random() * 150 + 100,
+                    height: Math.random() * 40 + 30,
+                    speed: Math.random() * 0.2 + 0.1,
+                    opacity: Math.random() * 0.3 + 0.1
+                }))
+            };
+
+            // Start sky update interval
+            setInterval(() => this.updateSkyTime(), 60000);
+
+        } catch (error) {
+            console.error('Game initialization failed:', error);
+            // Display error message to user
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255,0,0,0.8); color: white; padding: 20px; border-radius: 5px; text-align: center;';
+            errorDiv.innerHTML = `Game failed to start: ${error.message}<br>Please refresh the page or contact support.`;
+            document.body.appendChild(errorDiv);
+        }
     }
     
     initStartScreen() {
-        const startScreen = document.getElementById('startScreen');
-        const gameContainer = document.getElementById('gameContainer');
-        const startButton = document.getElementById('startButton');
-        
-        startButton.addEventListener('click', () => {
-            startScreen.style.display = 'none';
-            gameContainer.style.display = 'block';
-            this.initGame();
-        });
+        try {
+            const startScreen = document.getElementById('startScreen');
+            const gameContainer = document.getElementById('gameContainer');
+            const startButton = document.getElementById('startButton');
+            
+            if (!startScreen || !gameContainer || !startButton) {
+                throw new Error('Could not find required UI elements');
+            }
+            
+            startButton.addEventListener('click', () => {
+                startScreen.style.display = 'none';
+                gameContainer.style.display = 'block';
+                this.initGame();
+            });
+        } catch (error) {
+            console.error('Start screen initialization failed:', error);
+            throw error; // Re-throw to be caught by constructor
+        }
     }
     
     resizeCanvas() {
@@ -222,13 +249,33 @@ class Game {
     loadAssets() {
         // Load player sprite
         this.playerSprite = new Image();
+        this.playerSprite.onerror = () => console.error('Failed to load player sprite:', this.playerSprite.src);
+        this.playerSprite.onload = () => console.log('Successfully loaded player sprite');
         this.playerSprite.src = 'assets/Tiny Pixel Japan Male Character Pack/Samurai.png';
         
-        // Load NPC sprites
+        // Load NPC sprites with correct filenames
         this.npcSprites = {};
-        ['villager', 'lord', 'ronin'].forEach(type => {
+        const npcTypes = {
+            'villager': 'Villager',
+            'lord': 'Lord',
+            'ronin': 'Samurai'  // Using Samurai sprite for ronin
+        };
+        
+        Object.entries(npcTypes).forEach(([type, filename]) => {
             this.npcSprites[type] = new Image();
-            this.npcSprites[type].src = `assets/Tiny Pixel Japan Male Character Pack/NPC_${type.charAt(0).toUpperCase() + type.slice(1)}.png`;
+            this.npcSprites[type].onerror = () => console.error(`Failed to load ${type} sprite:`, this.npcSprites[type].src);
+            this.npcSprites[type].onload = () => console.log(`Successfully loaded ${type} sprite`);
+            this.npcSprites[type].src = `assets/Tiny Pixel Japan Male Character Pack/NPC_${filename}.png`;
+        });
+
+        // Add game initialization check
+        window.addEventListener('load', () => {
+            console.log('Game assets status:', {
+                playerSprite: this.playerSprite.complete,
+                npcSprites: Object.fromEntries(
+                    Object.entries(this.npcSprites).map(([type, sprite]) => [type, sprite.complete])
+                )
+            });
         });
     }
     
@@ -586,15 +633,8 @@ class Game {
     }
     
     updateUI() {
-        // Update health bar
-        const healthFill = document.querySelector('.health-fill');
-        const healthPercentage = (this.player.health / this.player.maxHealth) * 100;
-        healthFill.style.width = `${healthPercentage}%`;
-        
-        // Update mana bar
-        const manaFill = document.querySelector('.mana-fill');
-        const manaPercentage = (this.player.mana / this.player.maxMana) * 100;
-        manaFill.style.width = `${manaPercentage}%`;
+        // Peaceful version - no health/mana bars
+        // Could add meditation or peace indicators here if needed
     }
     
     render() {

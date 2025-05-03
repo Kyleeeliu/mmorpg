@@ -1,10 +1,10 @@
 :root {
-    --primary-red: #BC002D;
-    --primary-dark: #1A0F0F;
-    --accent-gold: #C7A353;
-    --paper-white: #F7F3E3;
-    --ink-black: #0D0D0D;
-    --wood-brown: #4A3B2B;
+    --primary-soft: #A8D8EA;  /* Soft blue */
+    --primary-dark: #2A4858;  /* Deep blue-grey */
+    --accent-sage: #90A955;   /* Sage green */
+    --paper-white: #F7F7F2;   /* Soft white */
+    --ink-grey: #4A4A4A;      /* Soft grey */
+    --wood-sage: #AA8B56;     /* Earthy brown */
 }
 
 * {
@@ -46,12 +46,12 @@ body {
     height: 100px;
     background-image: repeating-linear-gradient(
         45deg,
-        var(--primary-red) 0,
-        var(--primary-red) 2px,
+        var(--accent-sage) 0,
+        var(--accent-sage) 2px,
         transparent 2px,
         transparent 8px
     );
-    opacity: 0.3;
+    opacity: 0.2;
 }
 
 .japanese-pattern.top {
@@ -68,10 +68,10 @@ body {
 .start-content {
     text-align: center;
     padding: 3rem;
-    background: rgba(26, 15, 15, 0.95);
-    border: 2px solid var(--accent-gold);
+    background: rgba(42, 72, 88, 0.95);
+    border: 2px solid var(--accent-sage);
     border-radius: 10px;
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
     position: relative;
     max-width: 800px;
     width: 90%;
@@ -82,10 +82,17 @@ body {
 }
 
 .game-title {
-    font-size: 3rem;
+    font-size: 3.5rem;
     color: var(--paper-white);
-    text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+    text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
     position: relative;
+    margin-bottom: 1rem;
+}
+
+.subtitle {
+    font-size: 1.5rem;
+    color: var(--primary-soft);
+    margin-top: 1rem;
 }
 
 .game-title::after {
@@ -96,7 +103,7 @@ body {
     transform: translateX(-50%);
     width: 100px;
     height: 3px;
-    background: var(--accent-gold);
+    background: var(--accent-sage);
 }
 
 .start-buttons {
@@ -110,7 +117,7 @@ body {
     padding: 1rem 2rem;
     font-size: 1.2rem;
     font-family: 'Cinzel', serif;
-    border: 2px solid var(--accent-gold);
+    border: 2px solid var(--accent-sage);
     border-radius: 5px;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -141,29 +148,29 @@ body {
 }
 
 .btn-primary {
-    background: var(--primary-red);
+    background: var(--accent-sage);
 }
 
 .btn-primary:hover {
-    background: #A00025;
+    background: #7A9046;
 }
 
 .btn-secondary:hover {
-    background: rgba(199, 163, 83, 0.2);
+    background: rgba(144, 169, 85, 0.2);
 }
 
 .controls-guide {
     text-align: left;
     padding: 2rem;
-    background: rgba(74, 59, 43, 0.3);
+    background: rgba(42, 72, 88, 0.5);
     border-radius: 5px;
-    border: 1px solid var(--accent-gold);
+    border: 1px solid var(--accent-sage);
 }
 
 .controls-guide h3 {
     text-align: center;
     margin-bottom: 1.5rem;
-    color: var(--accent-gold);
+    color: var(--primary-soft);
     font-size: 1.5rem;
 }
 
@@ -181,7 +188,7 @@ body {
 }
 
 .key {
-    background: var(--primary-red);
+    background: var(--accent-sage);
     color: var(--paper-white);
     padding: 0.3rem 0.6rem;
     border-radius: 3px;
@@ -224,109 +231,15 @@ body {
     gap: 1rem;
 }
 
-.player-stats {
-    background: rgba(26, 15, 15, 0.9);
+.meditation-indicator {
+    background: rgba(42, 72, 88, 0.8);
     padding: 15px;
     border-radius: 5px;
-    border: 2px solid var(--accent-gold);
-}
-
-.stat-label {
-    color: var(--accent-gold);
-    font-size: 0.8rem;
-    margin-bottom: 0.2rem;
-    font-weight: bold;
-}
-
-.health-bar, .mana-bar {
-    width: 200px;
-    height: 15px;
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--accent-gold);
-    border-radius: 3px;
-    margin-bottom: 10px;
-    overflow: hidden;
-    position: relative;
-}
-
-.health-fill {
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, var(--primary-red), #FF4444);
-    transition: width 0.3s ease;
-}
-
-.mana-fill {
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, #0066CC, #4444FF);
-    transition: width 0.3s ease;
-}
-
-.action-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.inventory-button, .quest-log-button {
-    background: rgba(26, 15, 15, 0.9);
+    border: 2px solid var(--accent-sage);
+    text-align: center;
     color: var(--paper-white);
-    padding: 10px 15px;
-    border: 2px solid var(--accent-gold);
-    border-radius: 5px;
-    cursor: pointer;
+    font-size: 1.2rem;
     transition: all 0.3s ease;
-    font-family: 'Cinzel', serif;
-}
-
-.inventory-button:hover, .quest-log-button:hover {
-    background: rgba(199, 163, 83, 0.2);
-}
-
-.chat-box {
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
-    width: 300px;
-    background: rgba(26, 15, 15, 0.9);
-    border: 2px solid var(--accent-gold);
-    border-radius: 5px;
-    z-index: 2;
-}
-
-.chat-messages {
-    height: 150px;
-    overflow-y: auto;
-    padding: 10px;
-    color: var(--paper-white);
-}
-
-.chat-messages::-webkit-scrollbar {
-    width: 8px;
-}
-
-.chat-messages::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.3);
-}
-
-.chat-messages::-webkit-scrollbar-thumb {
-    background: var(--accent-gold);
-    border-radius: 4px;
-}
-
-.chat-input {
-    width: 100%;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--accent-gold);
-    color: var(--paper-white);
-    outline: none;
-    font-family: 'Cinzel', serif;
-}
-
-.chat-input::placeholder {
-    color: rgba(247, 243, 227, 0.5);
 }
 
 /* Animation for UI elements */
