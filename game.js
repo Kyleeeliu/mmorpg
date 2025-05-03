@@ -138,7 +138,7 @@ class Game {
                     wisdom: "Peace begins within."
                 },
                 {
-                    x: 1500,
+                    x: 3000,  // Moved into the forest (forest starts at 2200)
                     y: this.map.ground.y - 200,
                     width: 200,
                     height: 200,
@@ -149,7 +149,7 @@ class Game {
                     wisdom: "Knowledge flows like water."
                 },
                 {
-                    x: 1800,
+                    x: 5800,  // Moved to end of forest (forest ends at 6200)
                     y: this.map.ground.y - 210,
                     width: 210,
                     height: 210,
@@ -181,25 +181,25 @@ class Game {
                 villager: {
                     greeting: "Welcome to our peaceful town, traveler!",
                     conversations: [
-                        "The cherry blossoms are beautiful this time of year.",
-                        "Have you visited the merchant's shop? He has rare items.",
-                        "Our town is known for its peaceful way of life."
+                        "The Garden of Wisdom shrine lies deep in the forest to the east.",
+                        "Follow the path through the forest, you'll find it around the halfway point.",
+                        "The shrine's massive torii gate can be seen from afar."
                     ]
                 },
                 lord: {
                     greeting: "Ah, a new face in our humble town.",
                     conversations: [
-                        "The dojo up ahead teaches meditation and inner peace.",
-                        "As the town's lord, I ensure everyone lives in harmony.",
-                        "Perhaps you'd like to settle here? We welcome peaceful souls."
+                        "The Garden of Wisdom awaits you in the forest, about halfway through.",
+                        "Seek enlightenment at the shrine, it lies at position 3000 paces east.",
+                        "The forest holds many secrets, but the Garden's torii gate stands tall."
                     ]
                 },
                 ronin: {
                     greeting: "Peace be with you, wanderer.",
                     conversations: [
-                        "I've found tranquility in tending to the garden.",
-                        "The townspeople here showed me the beauty of peace.",
-                        "Each day brings new opportunities for mindfulness."
+                        "I guard the path to the Garden of Wisdom, deep in these woods.",
+                        "The shrine lies halfway through the forest, marked by a grand torii gate.",
+                        "Follow the path east, you'll find the Garden around position 3000."
                     ]
                 }
             };
@@ -218,46 +218,7 @@ class Game {
                     y: Math.random() * (window.innerHeight - 200),
                     size: Math.random() * 2 + 1,
                     twinkle: Math.random()
-                })),
-                clouds: Array.from({ length: 8 }, () => { // Fewer, more distinct clouds
-                    const width = Math.random() * 60 + 100; // More consistent width
-                    const height = 60; // Fixed height for consistent look
-                    const squares = [];
-                    
-                    // Classic video game cloud pattern
-                    // Main body - 3x2 grid of squares
-                    const baseSize = 30; // Base square size
-                    
-                    // Top row - smaller squares
-                    for (let i = 0; i < 3; i++) {
-                        squares.push({
-                            xOffset: i * baseSize,
-                            yOffset: 0,
-                            size: baseSize,
-                            type: 'top'
-                        });
-                    }
-                    
-                    // Bottom row - larger squares for puffy bottom
-                    for (let i = 0; i < 4; i++) {
-                        squares.push({
-                            xOffset: (i * baseSize) - baseSize/2, // Offset for overhang
-                            yOffset: baseSize,
-                            size: baseSize,
-                            type: 'bottom'
-                        });
-                    }
-                    
-                    return {
-                        x: Math.random() * 2000,
-                        y: Math.random() * (window.innerHeight / 3), // Keep clouds in upper third
-                        width: width,
-                        height: height,
-                        speed: Math.random() * 0.15 + 0.05, // Slower, more steady movement
-                        opacity: 0.9, // Consistent opacity
-                        squares: squares
-                    };
-                })
+                }))
             };
 
             // Start sky update interval
@@ -682,16 +643,6 @@ class Game {
         this.sky.time = new Date();
     }
 
-    updateClouds() {
-        this.sky.clouds.forEach(cloud => {
-            cloud.x += cloud.speed;
-            if (cloud.x > this.map.width) {
-                cloud.x = -cloud.width;
-                cloud.y = Math.random() * (window.innerHeight / 2);
-            }
-        });
-    }
-
     getTimeOfDay() {
         const hour = this.sky.time.getHours();
         const minute = this.sky.time.getMinutes();
@@ -762,48 +713,6 @@ class Game {
                     star.size,
                     star.size
                 );
-            });
-        }
-
-        // Draw clouds
-        if (!isNight) {
-            const cloudOpacity = isDusk ? 0.3 : isDawn ? 0.4 : 1;
-            this.sky.clouds.forEach(cloud => {
-                this.ctx.save();
-                this.ctx.translate(-this.camera.x * 0.2, 0); // Parallax effect
-                
-                // Draw each square in the cloud
-                cloud.squares.forEach(square => {
-                    // Different shades for top and bottom squares
-                    if (square.type === 'top') {
-                        this.ctx.fillStyle = `rgba(255, 255, 255, ${cloud.opacity * cloudOpacity})`;
-                    } else {
-                        this.ctx.fillStyle = `rgba(240, 240, 240, ${cloud.opacity * cloudOpacity * 0.9})`; // Slightly darker bottom
-                    }
-                    
-                    // Draw rounded squares for softer look
-                    this.ctx.beginPath();
-                    const radius = 8; // Corner radius
-                    const x = cloud.x + square.xOffset;
-                    const y = cloud.y + square.yOffset;
-                    const size = square.size;
-                    
-                    // Draw rounded rectangle
-                    this.ctx.moveTo(x + radius, y);
-                    this.ctx.lineTo(x + size - radius, y);
-                    this.ctx.quadraticCurveTo(x + size, y, x + size, y + radius);
-                    this.ctx.lineTo(x + size, y + size - radius);
-                    this.ctx.quadraticCurveTo(x + size, y + size, x + size - radius, y + size);
-                    this.ctx.lineTo(x + radius, y + size);
-                    this.ctx.quadraticCurveTo(x, y + size, x, y + size - radius);
-                    this.ctx.lineTo(x, y + radius);
-                    this.ctx.quadraticCurveTo(x, y, x + radius, y);
-                    this.ctx.closePath();
-                    
-                    this.ctx.fill();
-                });
-                
-                this.ctx.restore();
             });
         }
     }
@@ -879,9 +788,6 @@ class Game {
                 gateHeight
             );
         }
-        
-        // Keep meditation area but adjust its position relative to gate
-        this.drawMeditationArea(building);
     }
     
     drawMeditationArea(building) {
@@ -1098,7 +1004,8 @@ class Game {
     }
 
     toggleMeditation() {
-        if (!this.meditation.active && this.dojoInteraction.nearDojo) {
+        const nearestShrine = this.findNearestShrine();
+        if (!this.meditation.active && nearestShrine) {
             this.meditation.active = true;
             this.meditation.duration = 0;
             this.player.isMoving = false;
@@ -1117,12 +1024,28 @@ class Game {
         this.meditation.benefits.peace = Math.min(100, this.meditation.benefits.peace + 0.1);
         this.meditation.benefits.wisdom = Math.min(100, this.meditation.benefits.wisdom + 0.05);
         
+        // Update game panel stats
+        if (this.gamePanel) {
+            // Update Character section stats
+            this.gamePanel.sections[0].stats[0].value = Math.floor(this.meditation.benefits.peace); // Spirit
+            this.gamePanel.sections[0].stats[1].value = Math.floor(this.meditation.benefits.wisdom); // Wisdom
+            
+            // Update Journey section meditation stat
+            this.gamePanel.sections[1].stats[1].value = Math.floor(this.meditation.duration / 60); // Convert to minutes
+        }
+        
         // Visual effects during meditation
         this.drawMeditationEffects();
     }
     
     drawMeditationEffects() {
         if (!this.meditation.active) return;
+        
+        const nearestShrine = this.findNearestShrine();
+        if (!nearestShrine) {
+            this.meditation.active = false;
+            return;
+        }
         
         // Draw peaceful aura around player as a square
         this.ctx.save();
@@ -1146,12 +1069,12 @@ class Game {
             );
         }
         
-        // Draw meditation timer
+        // Draw meditation timer and shrine name
         this.ctx.font = '16px Cinzel';
         this.ctx.fillStyle = 'white';
         this.ctx.textAlign = 'center';
         this.ctx.fillText(
-            `Meditating: ${Math.floor(this.meditation.duration)}s`,
+            `Meditating at ${nearestShrine.name}: ${Math.floor(this.meditation.duration)}s`,
             this.player.x + this.player.width/2,
             this.player.y - 20
         );
@@ -1219,9 +1142,32 @@ class Game {
             }
         });
 
-        if (nearestShrine && !nearestShrine.completed) {
-            this.showShrinePrompt(nearestShrine);
+        if (nearestShrine) {
+            if (!nearestShrine.completed) {
+                this.showShrinePrompt(nearestShrine);
+            }
+            // Show meditation prompt regardless of shrine completion
+            this.showMeditationPrompt(nearestShrine);
         }
+    }
+
+    showMeditationPrompt(shrine) {
+        if (this.meditation.active) return;
+        
+        this.ctx.save();
+        this.ctx.translate(-this.camera.x, 0);
+        
+        // Draw meditation prompt
+        this.ctx.font = '14px Cinzel';
+        this.ctx.fillStyle = '#FFD700';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText(
+            'Press M to meditate',
+            shrine.x + shrine.width/2,
+            shrine.y - 60
+        );
+        
+        this.ctx.restore();
     }
 
     showShrinePrompt(shrine) {
@@ -1257,6 +1203,15 @@ class Game {
         shrine.completed = true;
         this.spiritualProgress.totalShrinesCompleted++;
         this.yinYangMeter.progress = this.spiritualProgress.totalShrinesCompleted / this.shrines.length;
+
+        // Update game panel shrine count
+        if (this.gamePanel) {
+            this.gamePanel.sections[1].stats[0].value = this.spiritualProgress.totalShrinesCompleted;
+            
+            // Also increase wisdom and spirit for completing a shrine
+            this.gamePanel.sections[0].stats[0].value = Math.min(100, (this.gamePanel.sections[0].stats[0].value || 0) + 20); // Spirit +20
+            this.gamePanel.sections[0].stats[1].value = Math.min(100, (this.gamePanel.sections[0].stats[1].value || 0) + 15); // Wisdom +15
+        }
 
         // Show wisdom message after animation
         setTimeout(() => {
@@ -1735,7 +1690,6 @@ class Game {
             this.updatePlayerPhysics();
         }
         this.updateCamera();
-        this.updateClouds();
         this.checkNPCInteraction();
         this.checkDojoInteraction();
         this.checkShrineInteraction();
@@ -1922,8 +1876,8 @@ class Game {
         this.ctx.save();
         this.ctx.translate(-this.camera.x, 0);
         
-        // Draw buildings
-        this.buildings.forEach(building => this.drawBuilding(building));
+        // Draw regular buildings (excluding shrines)
+        this.buildings.filter(b => !b.type || b.type !== 'shrine').forEach(building => this.drawBuilding(building));
 
         // Draw ground
         this.ctx.fillStyle = '#5D4037';
@@ -1934,6 +1888,9 @@ class Game {
 
         // Draw decorative elements on ground
         this.drawGroundDecorations();
+
+        // Draw shrines after forest to ensure visibility
+        this.buildings.filter(b => b.type === 'shrine').forEach(building => this.drawBuilding(building));
 
         // Draw NPCs and player
         this.drawCharacters();
