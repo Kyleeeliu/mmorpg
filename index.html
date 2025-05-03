@@ -63,12 +63,26 @@
         <div class="japanese-pattern bottom"></div>
     </div>
 
+    <div class="cutscene" id="introCutscene" style="display: none;">
+        <div class="cutscene-content">
+            <div class="scroll-container">
+                <div class="scroll-text" id="scrollText">
+                    <p class="cutscene-paragraph">In the twilight of the Sengoku era, you were once a proud samurai, serving your lord with unwavering loyalty.</p>
+                    <p class="cutscene-paragraph">But fate dealt a cruel hand. In a single night of betrayal and flames, you lost everything - your lord, your clan, your purpose.</p>
+                    <p class="cutscene-paragraph">Now, haunted by the echoes of battle and the weight of your past, you wander the countryside, seeking a different kind of strength.</p>
+                    <p class="cutscene-paragraph">The old masters speak of a path to inner peace, marked by sacred shrines and ancient wisdom.</p>
+                    <p class="cutscene-paragraph">Perhaps in these quiet temples and forgotten groves, you will find what your warrior's heart truly seeks...</p>
+                </div>
+            </div>
+            <button id="continueButton" class="btn-primary">
+                <span class="japanese">続ける</span>
+                <span class="english">Continue</span>
+            </button>
+        </div>
+    </div>
+
     <div class="game-container" id="gameContainer" style="display: none;">
         <div class="game-ui">
-            <div class="meditation-indicator">
-                <span class="japanese">平安</span>
-                <span class="english">Peace</span>
-            </div>
         </div>
         <canvas id="gameCanvas"></canvas>
     </div>

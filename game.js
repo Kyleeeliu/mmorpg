@@ -64,6 +64,66 @@ class Game {
                 totalShrinesCompleted: 0
             };
 
+            // Quest system
+            this.questSystem = {
+                currentQuest: 0,
+                quests: [
+                    {
+                        id: 0,
+                        title: "The Path Begins",
+                        description: "Find the mysterious elder near the first house.",
+                        state: "active",
+                        type: "talk",
+                        targetNPC: "lord",
+                        completed: false,
+                        nextQuestId: 1
+                    },
+                    {
+                        id: 1,
+                        title: "First Steps",
+                        description: "Meditate at the Garden of Wisdom for 30 seconds.",
+                        state: "locked",
+                        type: "meditate",
+                        targetShrine: "Garden of Wisdom",
+                        requiredTime: 30,
+                        completed: false,
+                        nextQuestId: 2
+                    },
+                    {
+                        id: 2,
+                        title: "The Wandering Ronin",
+                        description: "Seek out the ronin who guards ancient knowledge.",
+                        state: "locked",
+                        type: "talk",
+                        targetNPC: "ronin",
+                        completed: false,
+                        nextQuestId: 3
+                    },
+                    {
+                        id: 3,
+                        title: "Trial of Patience",
+                        description: "Complete offerings at all three shrines to prove your dedication.",
+                        state: "locked",
+                        type: "shrines",
+                        requiredShrines: 3,
+                        completed: false,
+                        nextQuestId: 4
+                    },
+                    {
+                        id: 4,
+                        title: "Inner Peace",
+                        description: "Return to the elder to complete your journey.",
+                        state: "locked",
+                        type: "talk",
+                        targetNPC: "lord",
+                        completed: false,
+                        nextQuestId: null
+                    }
+                ],
+                showQuestPrompt: false,
+                questPromptTimer: 0
+            };
+
             // Simplify shrine system
             this.shrines = [
                 {
@@ -270,6 +330,67 @@ class Game {
                 ]
             };
 
+            // Initialize forest properties with logs
+            this.forest = {
+                startX: 2200,
+                width: 4000,
+                trees: [],
+                logs: []  // Add logs array
+            };
+
+            // Initialize trees with consistent spacing pattern
+            const treeSpacing = 100;
+            const treeY = this.map.ground.y - 240;
+            const rowOffset = treeSpacing / 2;
+
+            // Create main row of trees
+            for (let x = this.forest.startX; x < this.forest.startX + this.forest.width; x += treeSpacing) {
+                // Add main row trees
+                this.forest.trees.push({
+                    x: x,
+                    y: treeY,
+                    width: 150,
+                    height: 250
+                });
+
+                // Add offset row trees (between main row trees)
+                if (x < this.forest.startX + this.forest.width - rowOffset) {
+                    this.forest.trees.push({
+                        x: x + rowOffset,
+                        y: treeY,
+                        width: 150,
+                        height: 250
+                    });
+                }
+
+                // Randomly add logs near some trees
+                if (Math.random() < 0.3) { // 30% chance for a log
+                    const logOffset = Math.random() * 100 - 50; // Random offset from tree
+                    this.forest.logs.push({
+                        x: x + logOffset,
+                        y: this.map.ground.y - 20, // Place log slightly above ground
+                        width: 60,  // Log dimensions
+                        height: 30,
+                        rotation: Math.random() * 0.5 - 0.25 // Slight random rotation (-0.25 to 0.25 radians)
+                    });
+                }
+            }
+
+            // Load tree sprite
+            this.treeSprite = new Image();
+            this.treeSprite.onerror = () => console.error('Failed to load tree sprite:', this.treeSprite.src);
+            this.treeSprite.onload = () => console.log('Successfully loaded tree sprite');
+            this.treeSprite.src = 'assets/environment/tree.png';
+
+            // Load log sprite
+            this.logSprite = new Image();
+            this.logSprite.onerror = () => console.error('Failed to load log sprite:', this.logSprite.src);
+            this.logSprite.onload = () => console.log('Successfully loaded log sprite');
+            this.logSprite.src = 'assets/environment/log.png';
+
+            // Extend map width to accommodate forest
+            this.map.width = this.forest.startX + this.forest.width + 400;
+
         } catch (error) {
             console.error('Game initialization failed:', error);
             // Display error message to user
@@ -283,15 +404,22 @@ class Game {
     initStartScreen() {
         try {
             const startScreen = document.getElementById('startScreen');
+            const introCutscene = document.getElementById('introCutscene');
             const gameContainer = document.getElementById('gameContainer');
             const startButton = document.getElementById('startButton');
+            const continueButton = document.getElementById('continueButton');
             
-            if (!startScreen || !gameContainer || !startButton) {
+            if (!startScreen || !gameContainer || !startButton || !introCutscene || !continueButton) {
                 throw new Error('Could not find required UI elements');
             }
             
             startButton.addEventListener('click', () => {
                 startScreen.style.display = 'none';
+                introCutscene.style.display = 'flex';
+            });
+
+            continueButton.addEventListener('click', () => {
+                introCutscene.style.display = 'none';
                 gameContainer.style.display = 'block';
                 this.initGame();
             });
@@ -449,6 +577,12 @@ class Game {
         this.playerSprite.onload = () => console.log('Successfully loaded player sprite');
         this.playerSprite.src = 'assets/Tiny Pixel Japan Male Character Pack/Samurai.png';
         
+        // Load gate sprite
+        this.gateSprite = new Image();
+        this.gateSprite.onerror = () => console.error('Failed to load gate sprite:', this.gateSprite.src);
+        this.gateSprite.onload = () => console.log('Successfully loaded gate sprite');
+        this.gateSprite.src = 'assets/environment/gate.png';
+        
         // Load NPC sprites with correct filenames
         this.npcSprites = {};
         const npcTypes = {
@@ -470,7 +604,8 @@ class Game {
                 playerSprite: this.playerSprite.complete,
                 npcSprites: Object.fromEntries(
                     Object.entries(this.npcSprites).map(([type, sprite]) => [type, sprite.complete])
-                )
+                ),
+                treeSprite: this.treeSprite.complete
             });
         });
     }
@@ -674,17 +809,20 @@ class Game {
     }
 
     drawBuilding(building) {
-        // Base building
-        this.ctx.fillStyle = '#4A4A4A';
-        this.ctx.fillRect(building.x, building.y, building.width, building.height);
+        // Skip base building for temples
+        if (building.style !== 'temple') {
+            // Base building
+            this.ctx.fillStyle = '#4A4A4A';
+            this.ctx.fillRect(building.x, building.y, building.width, building.height);
 
-        // Roof
-        this.ctx.beginPath();
-        this.ctx.moveTo(building.x - 20, building.y);
-        this.ctx.lineTo(building.x + building.width/2, building.y - 40);
-        this.ctx.lineTo(building.x + building.width + 20, building.y);
-        this.ctx.fillStyle = '#8B4513';
-        this.ctx.fill();
+            // Roof
+            this.ctx.beginPath();
+            this.ctx.moveTo(building.x - 20, building.y);
+            this.ctx.lineTo(building.x + building.width/2, building.y - 40);
+            this.ctx.lineTo(building.x + building.width + 20, building.y);
+            this.ctx.fillStyle = '#8B4513';
+            this.ctx.fill();
+        }
 
         // Windows and details based on building type
         switch(building.style) {
@@ -726,57 +864,23 @@ class Game {
     }
 
     drawTempleDetails(building) {
-        // Main entrance (Torii gate style)
-        this.ctx.fillStyle = '#A52A2A'; // Deep red
+        // Main entrance (Using gate sprite)
+        if (this.gateSprite && this.gateSprite.complete) {
+            const gateWidth = building.width * 3.0;  // Made enormous
+            const gateHeight = building.height * 2.5;  // Made towering
+            const gateX = building.x + (building.width - gateWidth) / 2;
+            const gateY = building.y + building.height - gateHeight * 0.7;  // Brought lower down
+            
+            this.ctx.drawImage(
+                this.gateSprite,
+                gateX,
+                gateY,
+                gateWidth,
+                gateHeight
+            );
+        }
         
-        // Left pillar
-        this.ctx.fillRect(
-            building.x + building.width/4 - 10,
-            building.y + building.height - 120,
-            20, 120
-        );
-        
-        // Right pillar
-        this.ctx.fillRect(
-            building.x + (building.width * 3/4) - 10,
-            building.y + building.height - 120,
-            20, 120
-        );
-        
-        // Top beam
-        this.ctx.fillRect(
-            building.x + building.width/4 - 20,
-            building.y + building.height - 120,
-            building.width/2 + 40, 20
-        );
-        
-        // Curved roof detail
-        this.ctx.beginPath();
-        this.ctx.moveTo(building.x - 30, building.y);
-        this.ctx.quadraticCurveTo(
-            building.x + building.width/2,
-            building.y - 60,
-            building.x + building.width + 30,
-            building.y
-        );
-        this.ctx.fillStyle = '#8B4513';
-        this.ctx.fill();
-        
-        // Ornate details
-        this.ctx.fillStyle = '#FFD700';
-        
-        // Top ornament (square)
-        this.ctx.fillRect(
-            building.x + building.width/2 - 15,
-            building.y - 55,
-            30, 30
-        );
-        
-        // Side ornaments (squares)
-        this.ctx.fillRect(building.x - 25, building.y + 15, 20, 20);
-        this.ctx.fillRect(building.x + building.width + 5, building.y + 15, 20, 20);
-        
-        // Meditation area
+        // Keep meditation area but adjust its position relative to gate
         this.drawMeditationArea(building);
     }
     
@@ -1278,35 +1382,324 @@ class Game {
         const boxX = (this.canvas.width - boxWidth) / 2;
         const boxY = (this.canvas.height - boxHeight) / 2;
 
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        // Draw traditional paper background
+        this.ctx.fillStyle = '#F4E4BC';
         this.ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
-        this.ctx.strokeStyle = '#C7A353';
-        this.ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
 
-        // Draw message content
-        this.ctx.font = '24px Cinzel';
-        this.ctx.fillStyle = '#FFD700';
+        // Draw pixel perfect border and decorations
+        this.drawPixelBorder(boxX, boxY, boxWidth, boxHeight);
+        this.drawCornerDecorations(boxX, boxY, boxWidth, boxHeight);
+
+        // Draw horizontal decorative lines
+        this.ctx.fillStyle = '#8B4513';
+        this.ctx.fillRect(boxX + 20, boxY + 50, boxWidth - 40, 2);
+        this.ctx.fillRect(boxX + 20, boxY + boxHeight - 40, boxWidth - 40, 2);
+
+        // Draw title
+        this.ctx.font = 'bold 16px "Press Start 2P"';
+        this.ctx.fillStyle = '#8B4513';
         this.ctx.textAlign = 'center';
-        this.ctx.fillText(message.title, boxX + boxWidth/2, boxY + 40);
+        this.ctx.fillText(message.title, boxX + boxWidth/2, boxY + 35);
 
-        this.ctx.font = '16px Cinzel';
-        this.ctx.fillStyle = '#FFFFFF';
-        this.ctx.fillText(message.text, boxX + boxWidth/2, boxY + 80);
+        // Draw main text
+        this.ctx.font = '12px "Press Start 2P"';
+        this.wrapPixelText(message.text, boxX + 30, boxY + 80, boxWidth - 60);
 
-        if (message.requirement) {
-            this.ctx.fillStyle = '#C7A353';
-            this.ctx.fillText(message.requirement, boxX + boxWidth/2, boxY + 110);
-        }
-
+        // Draw effect text if present
         if (message.effect) {
-            this.ctx.fillStyle = '#90EE90';
-            this.ctx.fillText(message.effect, boxX + boxWidth/2, boxY + 110);
+            this.ctx.fillStyle = '#A52A2A';
+            this.wrapPixelText(message.effect, boxX + 30, boxY + boxHeight - 25, boxWidth - 60);
         }
 
-        if (message.footer) {
-            this.ctx.fillStyle = '#FFD700';
-            this.ctx.fillText(message.footer, boxX + boxWidth/2, boxY + 130);
+        // Draw pixel art scroll decorations
+        this.drawScrollDecoration(boxX, boxY, boxWidth, boxHeight);
+    }
+
+    drawScrollDecoration(x, y, width, height) {
+        // Draw scroll ends
+        this.ctx.fillStyle = '#8B4513';
+        
+        // Left scroll
+        const scrollWidth = 8;
+        const scrollPattern = [
+            [1,1,1,1],
+            [0,1,1,0],
+            [1,1,1,1]
+        ];
+        
+        // Draw left scroll
+        scrollPattern.forEach((row, i) => {
+            row.forEach((pixel, j) => {
+                if (pixel) {
+                    this.ctx.fillRect(x + j * 2, y + height/2 - 3 + i * 2, 2, 2);
+                }
+            });
+        });
+        
+        // Draw right scroll
+        scrollPattern.forEach((row, i) => {
+            row.forEach((pixel, j) => {
+                if (pixel) {
+                    this.ctx.fillRect(x + width - 8 + j * 2, y + height/2 - 3 + i * 2, 2, 2);
+                }
+            });
+        });
+    }
+
+    updateQuest() {
+        const currentQuest = this.questSystem.quests[this.questSystem.currentQuest];
+        if (!currentQuest || currentQuest.completed) return;
+
+        switch (currentQuest.type) {
+            case "talk":
+                if (this.activeNPC && this.activeNPC.type === currentQuest.targetNPC && this.dialogueActive) {
+                    this.completeQuest(currentQuest);
+                }
+                break;
+            case "meditate":
+                if (this.meditation.active) {
+                    const nearestShrine = this.findNearestShrine();
+                    if (nearestShrine && nearestShrine.name === currentQuest.targetShrine) {
+                        if (this.meditation.duration >= currentQuest.requiredTime) {
+                            this.completeQuest(currentQuest);
+                        }
+                    }
+                }
+                break;
+            case "shrines":
+                if (this.spiritualProgress.totalShrinesCompleted >= currentQuest.requiredShrines) {
+                    this.completeQuest(currentQuest);
+                }
+                break;
         }
+    }
+
+    completeQuest(quest) {
+        quest.completed = true;
+        quest.state = "completed";
+        
+        // Show completion message
+        this.showQuestComplete(quest);
+        
+        // Advance to next quest if there is one
+        if (quest.nextQuestId !== null) {
+            const nextQuest = this.questSystem.quests.find(q => q.id === quest.nextQuestId);
+            if (nextQuest) {
+                nextQuest.state = "active";
+                this.questSystem.currentQuest = quest.nextQuestId;
+                
+                // Show new quest notification after a delay
+                setTimeout(() => {
+                    this.showNewQuest(nextQuest);
+                }, 2000);
+            }
+        } else {
+            // Game completion
+            setTimeout(() => {
+                this.showGameCompletion();
+            }, 2000);
+        }
+    }
+
+    showQuestComplete(quest) {
+        const message = {
+            title: "Quest Complete!",
+            text: quest.title,
+            effect: "You have grown in wisdom and understanding."
+        };
+        this.showMessage(message);
+    }
+
+    showNewQuest(quest) {
+        const message = {
+            title: "New Quest",
+            text: quest.title,
+            effect: quest.description
+        };
+        this.showMessage(message);
+    }
+
+    drawQuestIndicator() {
+        const currentQuest = this.questSystem.quests[this.questSystem.currentQuest];
+        if (!currentQuest || currentQuest.completed) return;
+
+        const x = 10;
+        const y = 10;
+        const width = 300;
+        const height = 70;
+
+        // Draw traditional paper background
+        this.ctx.fillStyle = '#F4E4BC'; // Aged paper color
+        this.ctx.fillRect(x, y, width, height);
+
+        // Draw pixel perfect border pattern
+        this.drawPixelBorder(x, y, width, height);
+
+        // Draw traditional corner decorations
+        this.drawCornerDecorations(x, y, width, height);
+
+        // Draw title with pixel shadow
+        this.ctx.font = 'bold 16px "Press Start 2P"';
+        this.ctx.fillStyle = '#8B4513'; // Dark brown
+        this.ctx.textAlign = 'left';
+        this.ctx.fillText(currentQuest.title, x + 20, y + 30);
+
+        // Draw description with pixel-perfect line breaks
+        this.ctx.font = '12px "Press Start 2P"';
+        this.wrapPixelText(currentQuest.description, x + 20, y + 50, width - 40);
+    }
+
+    drawPixelBorder(x, y, width, height) {
+        // Draw outer border (2px thick)
+        this.ctx.fillStyle = '#8B4513'; // Dark brown
+        this.ctx.fillRect(x, y, width, 2);
+        this.ctx.fillRect(x, y + height - 2, width, 2);
+        this.ctx.fillRect(x, y, 2, height);
+        this.ctx.fillRect(x + width - 2, y, 2, height);
+
+        // Draw traditional pattern along the border
+        this.ctx.fillStyle = '#A52A2A'; // Darker red
+        for (let i = x + 6; i < x + width - 6; i += 8) {
+            // Top pattern
+            this.ctx.fillRect(i, y + 4, 4, 2);
+            // Bottom pattern
+            this.ctx.fillRect(i, y + height - 6, 4, 2);
+        }
+        for (let i = y + 6; i < y + height - 6; i += 8) {
+            // Left pattern
+            this.ctx.fillRect(x + 4, i, 2, 4);
+            // Right pattern
+            this.ctx.fillRect(x + width - 6, i, 2, 4);
+        }
+    }
+
+    drawCornerDecorations(x, y, width, height) {
+        const cornerSize = 12;
+        this.ctx.fillStyle = '#A52A2A'; // Darker red
+
+        // Top-left corner
+        this.drawPixelCorner(x + 4, y + 4, cornerSize, 'tl');
+        // Top-right corner
+        this.drawPixelCorner(x + width - 4 - cornerSize, y + 4, cornerSize, 'tr');
+        // Bottom-left corner
+        this.drawPixelCorner(x + 4, y + height - 4 - cornerSize, cornerSize, 'bl');
+        // Bottom-right corner
+        this.drawPixelCorner(x + width - 4 - cornerSize, y + height - 4 - cornerSize, cornerSize, 'br');
+    }
+
+    drawPixelCorner(x, y, size, position) {
+        const pattern = [
+            [1,1,0],
+            [1,0,1],
+            [0,1,1]
+        ];
+        
+        pattern.forEach((row, i) => {
+            row.forEach((pixel, j) => {
+                if (pixel) {
+                    let px = x + (position.includes('r') ? size - j * 4 : j * 4);
+                    let py = y + (position.includes('b') ? size - i * 4 : i * 4);
+                    this.ctx.fillRect(px, py, 2, 2);
+                }
+            });
+        });
+    }
+
+    wrapPixelText(text, x, y, maxWidth) {
+        const words = text.split(' ');
+        let line = '';
+        let lineHeight = 16;
+
+        for (let word of words) {
+            const testLine = line + (line ? ' ' : '') + word;
+            const metrics = this.ctx.measureText(testLine);
+            
+            if (metrics.width > maxWidth && line !== '') {
+                this.ctx.fillStyle = '#5C4033'; // Brown text
+                this.ctx.fillText(line, x, y);
+                line = word;
+                y += lineHeight;
+            } else {
+                line = testLine;
+            }
+        }
+        this.ctx.fillStyle = '#5C4033'; // Brown text
+        this.ctx.fillText(line, x, y);
+    }
+
+    drawGamePanel() {
+        const panel = this.gamePanel;
+        const x = panel.x;
+        const y = panel.y;
+        const width = panel.width;
+        const height = panel.height;
+
+        // Draw traditional paper background
+        this.ctx.fillStyle = '#F4E4BC';
+        this.ctx.fillRect(x, y, width, height);
+
+        // Draw pixel perfect border and decorations
+        this.drawPixelBorder(x, y, width, height);
+        this.drawCornerDecorations(x, y, width, height);
+
+        let currentY = y + 25;
+
+        // Draw sections
+        panel.sections.forEach((section, index) => {
+            // Section title with traditional decoration
+            this.ctx.fillStyle = '#8B4513';
+            this.ctx.font = 'bold 16px "Press Start 2P"';
+            this.ctx.textAlign = 'center';
+            
+            // Draw title
+            this.ctx.fillText(section.title, x + width/2, currentY);
+            currentY += 25;
+
+            // Draw horizontal line after the title (not before)
+            this.ctx.fillRect(x + 15, currentY - 5, width - 30, 2);
+            
+            // Draw stats with pixel perfect bars
+            section.stats.forEach(stat => {
+                this.ctx.font = '12px "Press Start 2P"';
+                this.ctx.fillStyle = '#5C4033';
+                this.ctx.textAlign = 'left';
+                this.ctx.fillText(stat.label, x + 15, currentY + 15);
+
+                if (stat.max) {
+                    // Draw pixel perfect progress bar
+                    const barWidth = width - 45;
+                    const barHeight = 8;
+                    const barX = x + 15;
+                    const barY = currentY + 20;
+
+                    // Bar background (pixel pattern)
+                    this.ctx.fillStyle = '#D3D3D3';
+                    for (let i = 0; i < barWidth; i += 2) {
+                        this.ctx.fillRect(barX + i, barY, 1, barHeight);
+                    }
+
+                    // Progress
+                    const progress = Math.min(1, stat.value / stat.max);
+                    this.ctx.fillStyle = '#8B4513';
+                    this.ctx.fillRect(barX, barY, barWidth * progress, barHeight);
+
+                    // Pixel perfect border
+                    this.ctx.strokeStyle = '#5C4033';
+                    this.ctx.lineWidth = 1;
+                    this.ctx.strokeRect(barX, barY, barWidth, barHeight);
+                }
+
+                const valueText = stat.unit ? 
+                    `${stat.value}${stat.unit}` : 
+                    `${stat.value}/${stat.max}`;
+                this.ctx.textAlign = 'right';
+                this.ctx.fillText(valueText, x + width - 15, currentY + 15);
+
+                currentY += 35;
+            });
+
+            currentY += 10;
+        });
     }
 
     findNearestShrine() {
@@ -1349,6 +1742,7 @@ class Game {
         this.updateMeditation(timestamp);
         this.updateOfferingAnimation();
         this.updateUI();
+        this.updateQuest();
         
         // Update animation frame
         if (timestamp - this.lastFrameTime > this.animationSpeed) {
@@ -1517,74 +1911,6 @@ class Game {
         this.ctx.restore();
     }
     
-    drawGamePanel() {
-        const panel = this.gamePanel;
-        
-        // Update stats
-        panel.sections[0].stats[0].value = Math.floor(this.meditation.benefits.peace);
-        panel.sections[0].stats[1].value = Math.floor(this.meditation.benefits.wisdom);
-        panel.sections[1].stats[0].value = this.spiritualProgress.totalShrinesCompleted;
-        panel.sections[1].stats[1].value = Math.floor(this.meditation.duration / 60);
-
-        // Draw panel background with more opacity
-        this.ctx.fillStyle = 'rgba(42, 72, 88, 0.95)';
-        this.ctx.fillRect(panel.x, panel.y, panel.width, panel.height);
-
-        // Draw border with thicker line
-        this.ctx.strokeStyle = '#90A955';
-        this.ctx.lineWidth = 3;
-        this.ctx.strokeRect(panel.x, panel.y, panel.width, panel.height);
-
-        let currentY = panel.y + 20;
-
-        // Draw sections
-        panel.sections.forEach(section => {
-            // Draw section title with shadow for better visibility
-            this.ctx.font = 'bold 16px Cinzel';
-            this.ctx.fillStyle = '#FFD700';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText(section.title, panel.x + panel.width/2, currentY);
-            currentY += 30;
-
-            // Draw stats
-            section.stats.forEach(stat => {
-                // Draw stat label
-                this.ctx.font = '14px Cinzel';
-                this.ctx.fillStyle = '#FFFFFF';
-                this.ctx.textAlign = 'left';
-                this.ctx.fillText(stat.label, panel.x + 15, currentY);
-
-                // Draw stat value
-                const valueText = stat.unit ? 
-                    `${stat.value}${stat.unit}` : 
-                    `${stat.value}/${stat.max}`;
-                this.ctx.textAlign = 'right';
-                this.ctx.fillText(valueText, panel.x + panel.width - 15, currentY);
-
-                // Draw progress bar if stat has max value
-                if (stat.max) {
-                    const barWidth = panel.width - 30;
-                    const barHeight = 6;  // Slightly thicker bars
-                    const barX = panel.x + 15;
-                    const barY = currentY + 5;
-
-                    // Draw background
-                    this.ctx.fillStyle = '#2A4858';
-                    this.ctx.fillRect(barX, barY, barWidth, barHeight);
-
-                    // Draw progress
-                    this.ctx.fillStyle = '#90A955';
-                    const progress = Math.min(1, stat.value / stat.max);
-                    this.ctx.fillRect(barX, barY, barWidth * progress, barHeight);
-                }
-
-                currentY += 30;  // Increased spacing between stats
-            });
-
-            currentY += 15; // Add more space between sections
-        });
-    }
-    
     render() {
         // Clear canvas
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -1603,6 +1929,9 @@ class Game {
         this.ctx.fillStyle = '#5D4037';
         this.ctx.fillRect(0, this.map.ground.y, this.map.width, this.map.ground.height);
 
+        // Draw forest
+        this.drawForest();
+
         // Draw decorative elements on ground
         this.drawGroundDecorations();
 
@@ -1614,6 +1943,7 @@ class Game {
 
         // Draw UI elements (in screen space)
         this.updateUI();
+        this.drawQuestIndicator();
 
         // Draw interaction prompt and dialogue
         this.drawInteractionPrompt();
@@ -1628,14 +1958,7 @@ class Game {
     }
     
     drawGroundDecorations() {
-        // Draw grass patches
-        this.ctx.fillStyle = '#8D6E63';
-        for (let x = 0; x < this.map.width; x += 100) {
-            const height = 5 + Math.sin(x * 0.1) * 3;
-            this.ctx.fillRect(x, this.map.ground.y - height, 50, height);
-        }
-
-        // Draw small square stones instead of flowers
+        // Draw small square stones
         for (let x = 20; x < this.map.width; x += 200) {
             this.ctx.fillStyle = '#FFFFFF';
             this.ctx.fillRect(x - 2, this.map.ground.y - 7, 4, 4);
@@ -1683,6 +2006,41 @@ class Game {
                 this.player.width, this.player.height
             );
             this.ctx.restore();
+        }
+    }
+
+    drawForest() {
+        if (!this.treeSprite || !this.treeSprite.complete) {
+            console.log('Tree sprite not ready');
+            return;
+        }
+
+        // Draw trees first (so they appear behind logs)
+        this.forest.trees.forEach(tree => {
+            this.ctx.drawImage(
+                this.treeSprite,
+                tree.x,
+                tree.y,
+                tree.width,
+                tree.height
+            );
+        });
+
+        // Draw logs on top of trees
+        if (this.logSprite && this.logSprite.complete) {
+            this.forest.logs.forEach(log => {
+                this.ctx.save();
+                // Translate to log center for rotation
+                this.ctx.translate(log.x + log.width/2, log.y + log.height/2);
+                this.ctx.rotate(log.rotation);
+                // Draw log centered at rotation point
+                this.ctx.drawImage(
+                    this.logSprite,
+                    -log.width/2, -log.height/2,
+                    log.width, log.height
+                );
+                this.ctx.restore();
+            });
         }
     }
 
