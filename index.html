@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wanderer - A Peaceful Journey</title>
+    <title>Ancient Japan MMORPG</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
@@ -14,48 +14,50 @@
         <div class="japanese-pattern top"></div>
         <div class="start-content">
             <div class="title-container">
-                <div class="lantern left"></div>
-                <div class="lantern right"></div>
                 <h1 class="game-title">
-                    <span class="japanese">放浪者</span>
-                    <span class="english">Wanderer</span>
+                    <span class="japanese">侍の道</span>
+                    <span class="english">Path of the Samurai</span>
                 </h1>
-                <p class="subtitle">
-                    <span class="japanese">心の旅路</span>
-                    <span class="english">A Journey of the Spirit</span>
-                </p>
             </div>
             <div class="start-buttons">
                 <button id="startButton" class="btn-primary">
-                    <span class="japanese">旅を始める</span>
-                    <span class="english">Begin Journey</span>
+                    <span class="japanese">始める</span>
+                    <span class="english">Start Game</span>
+                </button>
+                <button id="optionsButton" class="btn-secondary">
+                    <span class="japanese">設定</span>
+                    <span class="english">Options</span>
                 </button>
             </div>
             <div class="controls-guide">
                 <h3>
                     <span class="japanese">操作方法</span>
-                    <span class="english">Journey Controls</span>
+                    <span class="english">Controls</span>
                 </h3>
                 <div class="controls-grid">
                     <div class="control-item">
-                        <div class="key">A/D</div>
-                        <div class="action">Walk</div>
-                    </div>
-                    <div class="control-item">
-                        <div class="key">SHIFT</div>
-                        <div class="action">Run</div>
+                        <div class="key">WASD</div>
+                        <div class="action">Move</div>
                     </div>
                     <div class="control-item">
                         <div class="key">SPACE</div>
                         <div class="action">Jump</div>
                     </div>
                     <div class="control-item">
-                        <div class="key">E</div>
-                        <div class="action">Interact</div>
+                        <div class="key">SHIFT</div>
+                        <div class="action">Run</div>
                     </div>
                     <div class="control-item">
-                        <div class="key">M</div>
-                        <div class="action">Meditate</div>
+                        <div class="key">LMB</div>
+                        <div class="action">Quick Attack</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="key">RMB</div>
+                        <div class="action">Heavy Attack</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="key">Q</div>
+                        <div class="action">Special Attack</div>
                     </div>
                 </div>
             </div>
@@ -63,28 +65,34 @@
         <div class="japanese-pattern bottom"></div>
     </div>
 
-    <div class="cutscene" id="introCutscene" style="display: none;">
-        <div class="cutscene-content">
-            <div class="scroll-container">
-                <div class="scroll-text" id="scrollText">
-                    <p class="cutscene-paragraph">In the twilight of the Sengoku era, you were once a proud samurai, serving your lord with unwavering loyalty.</p>
-                    <p class="cutscene-paragraph">But fate dealt a cruel hand. In a single night of betrayal and flames, you lost everything - your lord, your clan, your purpose.</p>
-                    <p class="cutscene-paragraph">Now, haunted by the echoes of battle and the weight of your past, you wander the countryside, seeking a different kind of strength.</p>
-                    <p class="cutscene-paragraph">The old masters speak of a path to inner peace, marked by sacred shrines and ancient wisdom.</p>
-                    <p class="cutscene-paragraph">Perhaps in these quiet temples and forgotten groves, you will find what your warrior's heart truly seeks...</p>
-                </div>
-            </div>
-            <button id="continueButton" class="btn-primary">
-                <span class="japanese">続ける</span>
-                <span class="english">Continue</span>
-            </button>
-        </div>
-    </div>
-
     <div class="game-container" id="gameContainer" style="display: none;">
         <div class="game-ui">
+            <div class="player-stats">
+                <div class="stat-label">HP</div>
+                <div class="health-bar">
+                    <div class="health-fill"></div>
+                </div>
+                <div class="stat-label">MP</div>
+                <div class="mana-bar">
+                    <div class="mana-fill"></div>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="inventory-button">
+                    <span class="japanese">持ち物</span>
+                    <span class="english">Inventory</span>
+                </button>
+                <button class="quest-log-button">
+                    <span class="japanese">任務</span>
+                    <span class="english">Quests</span>
+                </button>
+            </div>
         </div>
         <canvas id="gameCanvas"></canvas>
+        <div class="chat-box">
+            <div class="chat-messages"></div>
+            <input type="text" class="chat-input" placeholder="Press Enter to chat...">
+        </div>
     </div>
     <script src="game.js"></script>
 </body>
